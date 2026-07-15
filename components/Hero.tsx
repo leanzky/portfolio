@@ -147,9 +147,10 @@ export function Hero() {
 
       {/* ============ Mobile / tablet composition ============ */}
       <div className="lg:hidden pt-24 pb-16 px-6">
-        <GiantName
-          fontSizeVw={Math.min(148 / site.hero.displayName.length, 30)}
-        />
+        {/* -mx-6 lets the name use the full screen width so it never clips */}
+        <div className="-mx-6">
+          <GiantName fontSizeVw={fontSizeVw} />
+        </div>
 
         {portrait && (
           // eslint-disable-next-line @next/next/no-img-element
