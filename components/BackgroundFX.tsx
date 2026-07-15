@@ -44,6 +44,7 @@ export function BackgroundFX() {
       className="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
       aria-hidden
     >
+      <div className="bg-sheen" />
       <div className="bg-blob bg-blob-1" />
       <div className="bg-blob bg-blob-2" />
       <div className="bg-blob bg-blob-3" />

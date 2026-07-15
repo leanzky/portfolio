@@ -61,7 +61,7 @@ body {
   left: -14vw;
   top: -18vw;
   background: radial-gradient(circle, rgba(250, 204, 21, 0.45), transparent 65%);
-  animation: blob-drift-1 28s ease-in-out infinite alternate;
+  animation: blob-drift-1 13s ease-in-out infinite alternate;
 }
 
 .bg-blob-2 {
@@ -70,7 +70,7 @@ body {
   right: -16vw;
   top: 24%;
   background: radial-gradient(circle, rgba(255, 252, 240, 0.75), transparent 65%);
-  animation: blob-drift-2 34s ease-in-out infinite alternate;
+  animation: blob-drift-2 17s ease-in-out infinite alternate;
 }
 
 .bg-blob-3 {
@@ -79,29 +79,55 @@ body {
   left: 16vw;
   bottom: -26vw;
   background: radial-gradient(circle, rgba(219, 145, 52, 0.35), transparent 65%);
-  animation: blob-drift-3 40s ease-in-out infinite alternate;
+  animation: blob-drift-3 21s ease-in-out infinite alternate;
 }
 
 @keyframes blob-drift-1 {
   to {
-    transform: translate(10vw, 8vw) scale(1.15);
+    transform: translate(18vw, 12vw) scale(1.25);
   }
 }
 
 @keyframes blob-drift-2 {
   to {
-    transform: translate(-9vw, -7vw) scale(1.18);
+    transform: translate(-16vw, -12vw) scale(1.3);
   }
 }
 
 @keyframes blob-drift-3 {
   to {
-    transform: translate(-7vw, -10vw) scale(1.1);
+    transform: translate(-14vw, -16vw) scale(1.2);
+  }
+}
+
+/* soft light band sweeping diagonally across the page */
+.bg-sheen {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(250, 204, 21, 0.18) 45%,
+    rgba(255, 250, 230, 0.4) 55%,
+    rgba(219, 145, 52, 0.14) 68%,
+    transparent 85%
+  );
+  animation: sheen-move 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes sheen-move {
+  from {
+    transform: translate3d(-14%, -9%, 0);
+  }
+  to {
+    transform: translate3d(14%, 9%, 0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-blob {
+  .bg-blob,
+  .bg-sheen {
     animation: none;
   }
 }
