@@ -48,7 +48,7 @@ export const site = {
   // email, the key arrives instantly, no account needed) and paste it here.
   // With a key, contact form messages are delivered via Web3Forms.
   // Without one, the form falls back to formsubmit.co (less reliable).
-  web3formsKey: "",
+  web3formsKey: "662bfc45-ac37-4531-b289-68e95cd725d2",
   // Put your resume PDF in /public and reference it here.
   // A download button appears in the hero and footer.
   resume: "/Leandro-Francia-Resume.pdf",
