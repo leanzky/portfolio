@@ -179,7 +179,7 @@ export function JourneyTrail({ entries }: { entries: TimelineEntry[] }) {
                   </svg>
                   <span
                     data-trail-dot
-                    className="absolute top-0 h-3 w-3 rounded-full bg-yellow-400 border border-foreground transition-transform duration-300"
+                    className="absolute top-0 h-3 w-3 rounded-full bg-yellow-400 border border-foreground transition-transform duration-500"
                     style={{
                       left: `${startX}%`,
                       transform: "translate(-50%, -50%) scale(0)",
@@ -187,7 +187,7 @@ export function JourneyTrail({ entries }: { entries: TimelineEntry[] }) {
                   />
                   <span
                     data-trail-dot
-                    className="absolute bottom-0 h-3 w-3 rounded-full bg-yellow-400 border border-foreground transition-transform duration-300"
+                    className="absolute bottom-0 h-3 w-3 rounded-full bg-yellow-400 border border-foreground transition-transform duration-500"
                     style={{
                       left: `${endX}%`,
                       transform: "translate(-50%, 50%) scale(0)",

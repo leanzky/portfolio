@@ -27,7 +27,7 @@ function GiantName({ fontSizeVw }: { fontSizeVw: number }) {
           key={i}
           aria-hidden
           className="hero-letter inline-block"
-          style={{ animationDelay: `${i * 0.055}s` }}
+          style={{ animationDelay: `${i * 0.09}s` }}
         >
           {letter}
         </span>
@@ -44,7 +44,7 @@ function Headline({ className = "" }: { className?: string }) {
         <span key={line} className="block overflow-hidden">
           <span
             className="hero-line block"
-            style={{ animationDelay: `${0.6 + i * 0.13}s` }}
+            style={{ animationDelay: `${0.9 + i * 0.22}s` }}
           >
             {line}
           </span>
