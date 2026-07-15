@@ -6,10 +6,12 @@ import { Capabilities } from "@/components/Capabilities";
 import { Faq } from "@/components/Faq";
 import { Footer } from "@/components/Footer";
 import { ContactModal } from "@/components/ContactModal";
+import { BackgroundFX } from "@/components/BackgroundFX";
 
 export default function Home() {
   return (
     <>
+      <BackgroundFX />
       <Nav />
       <main>
         <Hero />
