@@ -7,11 +7,13 @@ import { Faq } from "@/components/Faq";
 import { Footer } from "@/components/Footer";
 import { ContactModal } from "@/components/ContactModal";
 import { BackgroundFX } from "@/components/BackgroundFX";
+import { SmoothAnchors } from "@/components/SmoothAnchors";
 
 export default function Home() {
   return (
     <>
       <BackgroundFX />
+      <SmoothAnchors />
       <Nav />
       <main>
         <Hero />
