@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ============================================================
  *  EDIT THIS FILE TO PUT IN YOUR OWN INFORMATION.
  *  Every piece of text on the site comes from here.
@@ -13,7 +13,7 @@ export type Project = {
   description: string;
   tags: string[];
   url?: string; // live site link (optional)
-  image?: string; // e.g. "/projects/my-app.png" — optional, placeholder shown if missing
+  image?: string; // e.g. "/projects/my-app.png" - optional, placeholder shown if missing
 };
 
 export type TimelineEntry = {
@@ -124,28 +124,28 @@ export const site = {
           "A platform connecting event organizers with singers, DJs, and live performers. Verified profiles, secure GCash, Maya, and card payments, and real-time booking updates, all in one app. Designed, built, and coded by me.",
         tags: ["Full-stack", "Payments", "Real-time"],
         url: "https://payformers.com",
-        image: "/projects/payformers.png",
+        image: "/projects/payformers.webp",
       },
       {
         name: "OpenClaw Website Builder",
         description:
           "An OpenClaw-powered website builder where every project gets its own isolated agent, chat, and GitHub repository, generating and deploying full web apps like document management and inventory systems from conversation.",
         tags: ["OpenClaw", "Full-stack", "CI/CD"],
-        image: "/projects/website-builder.png",
+        image: "/projects/website-builder.webp",
       },
       {
         name: "Sagana Digital",
         description:
           "Marketing site for a Philippines-based digital agency, a supercharged virtual assistant that takes day-to-day work off clients' plates.",
         tags: ["Web Design", "Marketing", "Landing Page"],
-        image: "/projects/sagana.png",
+        image: "/projects/sagana.webp",
       },
       {
         name: "Weather Tracking App",
         description:
           "A real-time public environmental hub for Caraycayon, PH. Live heat index, UV skin-burn risk, humidity, wind, and rainfall analytics presented as a clean, glanceable dashboard.",
         tags: ["Real-time", "Data Viz", "API"],
-        image: "/projects/weather.png",
+        image: "/projects/weather.webp",
       },
     ] as Project[],
   },

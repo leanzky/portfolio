@@ -119,7 +119,7 @@ export function JourneyTrail({ entries }: { entries: TimelineEntry[] }) {
               <div className={onLeft ? "md:col-start-1" : "md:col-start-2"}>
                 <div
                   data-trail-card
-                  className="rounded-2xl border border-border bg-card p-8 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.06)] transition-opacity duration-300 ease-out will-change-transform"
+                  className="rounded-2xl border border-border bg-card p-8 md:p-10 shadow-[0_10px_40px_rgba(0,0,0,0.06)] will-change-[opacity,transform]"
                   style={{ opacity: 0.25 }}
                 >
                   <p className="font-display text-6xl md:text-7xl font-bold tracking-tighter text-yellow-400 select-none">
@@ -137,6 +137,8 @@ export function JourneyTrail({ entries }: { entries: TimelineEntry[] }) {
                       <img
                         src={entry.image}
                         alt={entry.caption ?? entry.title}
+                        loading="lazy"
+                        decoding="async"
                         className="rounded-xl border border-border w-full"
                       />
                       {entry.caption && (

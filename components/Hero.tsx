@@ -87,30 +87,38 @@ export function Hero() {
       {/* ============ Desktop composition ============ */}
       <div className="relative hidden lg:block h-svh min-h-[720px] max-h-[1000px]">
         {/* Giant display name behind everything (slow parallax layer) */}
-        <div data-parallax="0.3" className="absolute inset-x-0 top-14 z-0">
+        <div
+          data-parallax="0.3"
+          className="absolute inset-x-0 top-14 z-0 will-change-transform"
+        >
           <GiantName fontSizeVw={fontSizeVw} />
         </div>
 
-        {/* Portrait cutout, rising into the letters (mid parallax layer) */}
+        {/* Portrait cutout, rising into the letters (mid parallax layer).
+            Width is clamped so the head never crops on ultrawide screens. */}
         {portrait && (
           <div
             data-parallax="0.1"
-            className="absolute z-10 inset-x-0 bottom-0 flex justify-center"
+            className="absolute z-10 inset-x-0 bottom-0 flex justify-center will-change-transform"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={portrait}
               alt={site.name}
-              className="hero-rise hero-d1 w-[max(400px,37vw)] h-auto drop-shadow-[0_24px_48px_rgba(0,0,0,0.22)]"
+              width={1100}
+              height={1232}
+              fetchPriority="high"
+              className="hero-rise hero-d1 w-[clamp(400px,37vw,640px)] h-auto drop-shadow-[0_24px_48px_rgba(0,0,0,0.22)]"
             />
           </div>
         )}
 
-        {/* Left column: headline + signature, hugging the portrait's left edge */}
+        {/* Left column: headline + signature, hugging the portrait's left edge.
+            Anchor tracks the portrait's clamped width so they never overlap. */}
         <div
           data-parallax="0.16"
           data-scrollfade
-          className="absolute z-20 top-[40%] text-right right-[calc(50%+20vw)]"
+          className="absolute z-20 top-[40%] text-right left-4 right-[calc(50%+clamp(215px,19.5vw,345px))] will-change-transform"
         >
           <Headline className="font-display uppercase text-[min(3.4vw,4.5rem)] font-bold tracking-tight leading-[1.05]" />
           <div className="hero-rise hero-d3 mt-8 text-xl leading-snug text-foreground/90">
@@ -124,7 +132,7 @@ export function Hero() {
         <div
           data-parallax="0.22"
           data-scrollfade
-          className="absolute z-20 top-[44%] left-[calc(50%+20vw)]"
+          className="absolute z-20 top-[44%] right-4 left-[calc(50%+clamp(215px,19.5vw,345px))] will-change-transform"
         >
           <p className="hero-rise hero-d2 max-w-sm font-alt text-xl leading-relaxed text-foreground/80">
             {site.hero.subheadline}
@@ -148,6 +156,9 @@ export function Hero() {
           <img
             src={portrait}
             alt={site.name}
+            width={1100}
+            height={1232}
+            fetchPriority="high"
             className="hero-rise hero-d1 mx-auto -mt-[9vw] w-72 sm:w-80 h-auto drop-shadow-[0_20px_40px_rgba(0,0,0,0.2)]"
           />
         )}
