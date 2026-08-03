@@ -3,6 +3,7 @@
 import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import type { Card } from "@/lib/scrabble-slam/engine";
 import { initialState, reducer } from "@/lib/scrabble-slam/reducer";
+import type { PowerUpId } from "@/lib/scrabble-slam/powerups";
 import {
   getMutedServerSnapshot,
   getMutedSnapshot,
@@ -14,9 +15,8 @@ import { StartScreen } from "./StartScreen";
 import { Hud } from "./Hud";
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
-import { PowerUpLegend } from "./PowerUpLegend";
+import { PowerUpRail } from "./PowerUpRail";
 import { EndScreen } from "./EndScreen";
-import styles from "./game.module.css";
 
 export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -40,19 +40,17 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
     return () => window.clearInterval(id);
   }, [state.status]);
 
-  // Sound + haptics reacting to game events, without re-triggering on
-  // every render (only when a new feedback token or status arrives).
   useEffect(() => {
     if (state.feedback && state.feedback.id !== lastFeedbackId.current) {
       lastFeedbackId.current = state.feedback.id;
-      if (state.feedback.kind === "valid") sound.valid();
-      else if (state.feedback.kind === "invalid") {
+      const kind = state.feedback.kind;
+      if (kind === "valid") sound.valid();
+      else if (kind === "invalid" || kind === "blocked") {
         sound.invalid();
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate(70);
         }
-      } else if (state.feedback.kind === "expand") sound.expand();
-      else if (state.feedback.kind === "action") sound.action();
+      } else if (kind === "power") sound.action();
     }
   }, [state.feedback]);
 
@@ -64,63 +62,32 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
     }
   }, [state.status]);
 
-  function toggleMute() {
-    setMuted(!muted);
-  }
-
-  function findArmedCard(): Card | undefined {
-    if (!armedCardId) return undefined;
-    return state.hand.find((c) => c.id === armedCardId);
-  }
-
   function handleDragStart(card: Card, e: React.DragEvent) {
     e.dataTransfer.setData("text/plain", card.id);
     e.dataTransfer.effectAllowed = "move";
     setDraggingCardId(card.id);
   }
 
-  function handleArm(cardId: string) {
-    setArmedCardId(cardId === "" ? null : cardId);
-  }
-
-  function handlePlayAction(cardId: string) {
-    const card = state.hand.find((c) => c.id === cardId);
-    if (!card || card.kind !== "action") return;
-    if (card.action === "freeze") dispatch({ type: "PLAY_FREEZE", cardId });
-    if (card.action === "chaos") dispatch({ type: "PLAY_CHAOS", cardId });
-  }
-
   function handleTapSlot(slotIndex: number) {
-    const armed = findArmedCard();
-    if (armed && armed.kind === "letter") {
-      dispatch({ type: "PLACE_LETTER", cardId: armed.id, slotIndex });
-    }
+    if (!armedCardId) return;
+    dispatch({ type: "PLACE_LETTER", cardId: armedCardId, slotIndex });
     setArmedCardId(null);
   }
 
-  function handleTapExpandSlot() {
-    const armed = findArmedCard();
-    if (armed && armed.kind === "action" && armed.action === "expand") {
-      dispatch({ type: "PLACE_EXPAND", cardId: armed.id });
-    }
-    setArmedCardId(null);
+  function handleUsePowerUp(powerUp: PowerUpId) {
+    dispatch({ type: "USE_POWER_UP", powerUp });
   }
 
-  const armed = findArmedCard();
   const timeLeft = Math.max(0, (state.endAt - state.now) / 1000);
   const shakingCardId =
     state.feedback?.kind === "invalid" ? state.feedback.cardId : null;
-  const canExpand =
-    state.status === "playing" &&
-    state.wordLength === 4 &&
-    state.hand.some((c) => c.kind === "action" && c.action === "expand");
 
   return (
     <div className="min-h-svh flex flex-col justify-center py-8">
       {state.status === "idle" && (
         <StartScreen
-          onStart={(dictionaryId, duration) =>
-            dispatch({ type: "START", dictionaryId, duration })
+          onStart={(dictionaryId, wordLength, duration) =>
+            dispatch({ type: "START", dictionaryId, wordLength, duration })
           }
           onExit={onExit}
         />
@@ -140,47 +107,34 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
               if (armedCardId) dispatch({ type: "SWAP_CARD", cardId: armedCardId });
               setArmedCardId(null);
             }}
-            onToggleMute={toggleMute}
+            onToggleMute={() => setMuted(!muted)}
             onQuit={() => dispatch({ type: "RESET" })}
           />
 
-          <div className="relative">
-            {state.feedback?.kind === "expand" && (
-              <div className={styles.burst} />
-            )}
-            <WordGrid
-              word={state.word}
-              frozen={state.frozen}
-              now={state.now}
-              feedback={state.feedback}
-              canExpand={canExpand}
-              hasArmedLetter={armed?.kind === "letter"}
-              hasArmedExpand={
-                armed?.kind === "action" && armed.action === "expand"
-              }
-              onDropLetter={(cardId, slotIndex) =>
-                dispatch({ type: "PLACE_LETTER", cardId, slotIndex })
-              }
-              onDropExpand={(cardId) =>
-                dispatch({ type: "PLACE_EXPAND", cardId })
-              }
-              onTapSlot={handleTapSlot}
-              onTapExpandSlot={handleTapExpandSlot}
-            />
-          </div>
+          <WordGrid
+            word={state.word}
+            now={state.now}
+            feedback={state.feedback}
+            hintedSlot={state.hint?.slotIndex ?? null}
+            hasArmedLetter={!!armedCardId}
+            onDropLetter={(cardId, slotIndex) =>
+              dispatch({ type: "PLACE_LETTER", cardId, slotIndex })
+            }
+            onTapSlot={handleTapSlot}
+          />
 
           <PlayerHand
             hand={state.hand}
             armedCardId={armedCardId}
             shakingCardId={shakingCardId}
+            hintedCardId={state.hint?.cardId ?? null}
             draggingCardId={draggingCardId}
-            onArm={handleArm}
-            onPlayAction={handlePlayAction}
+            onArm={(id) => setArmedCardId(id === "" ? null : id)}
             onDragStart={handleDragStart}
             onDragEnd={() => setDraggingCardId(null)}
           />
 
-          <PowerUpLegend />
+          <PowerUpRail cooldowns={state.cooldowns} onUse={handleUsePowerUp} />
         </div>
       )}
 

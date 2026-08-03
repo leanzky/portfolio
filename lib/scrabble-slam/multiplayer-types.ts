@@ -39,9 +39,9 @@ export type PlayerRow = {
 
 export type MoveType =
   | "place_letter"
-  | "place_expand"
   | "freeze"
   | "chaos"
+  | "purge"
   | "draw"
   | "swap";
 

@@ -136,6 +136,21 @@ To skip the form entirely and use a booking link instead, set `ctaLink` to a Cal
 
 A word game linked from the Selected Work section. Solo mode needs nothing extra — it's fully client-side. Multiplayer needs a Supabase project.
 
+### How it plays
+
+Pick a word length (4, 5 or 6), a dictionary and a timer, then change one letter of the board word at a time to make new real words, emptying your 16-card hand before the clock runs out. Words never change length.
+
+**Power-ups** live on a rail beside the board (a strip underneath on narrow screens) rather than taking up hand slots. Each runs on a cooldown measured in *words played*, so the way to earn abilities back is to keep making words:
+
+| Ability | Effect | Cooldown |
+| --- | --- | --- |
+| **Hint** | Highlights a slot and the card that fits it | 2 words |
+| **Chaos** | Rerolls 4 cards in your hand (size unchanged) | 3 words |
+| **Freeze** | Puts 8 seconds back on the clock | 4 words |
+| **Purge** | Discards 2 cards outright | 5 words |
+
+Definitions live in [`lib/scrabble-slam/powerups.ts`](lib/scrabble-slam/powerups.ts) — cooldowns and copy are all editable there, and the rail renders whatever it finds.
+
 ### Multiplayer setup
 
 1. Create a Supabase project.

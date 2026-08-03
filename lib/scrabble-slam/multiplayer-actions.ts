@@ -11,13 +11,15 @@ function requireClient() {
 export async function createRoom(
   dictionaryId: DictionaryId,
   durationSeconds: number,
-  name: string
+  name: string,
+  startLength: number
 ): Promise<RpcResult> {
   const supabase = requireClient();
   const { data, error } = await supabase.rpc("create_room", {
     p_dictionary_id: dictionaryId,
     p_duration_seconds: durationSeconds,
     p_name: name,
+    p_start_length: startLength,
   });
   if (error) return { ok: false, reason: error.message };
   return data as RpcResult;

@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Card } from "@/lib/scrabble-slam/engine";
+import { findHint } from "@/lib/scrabble-slam/engine";
+import { dictionaries } from "@/lib/scrabble-slam/dictionary";
 import type { PlayerPublicRow, RoomRow } from "@/lib/scrabble-slam/multiplayer-types";
 import { attemptMove } from "@/lib/scrabble-slam/multiplayer-actions";
+import {
+  Cooldowns,
+  initialCooldowns,
+  POWER_UP_BY_ID,
+  PowerUpId,
+  tickCooldowns,
+} from "@/lib/scrabble-slam/powerups";
 import {
   getMutedServerSnapshot,
   getMutedSnapshot,
@@ -11,30 +20,21 @@ import {
   sound,
   subscribeMuted,
 } from "@/lib/scrabble-slam/sound";
-import { useSyncExternalStore } from "react";
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
-import { PowerUpLegend } from "./PowerUpLegend";
+import { PowerUpRail } from "./PowerUpRail";
 import { Hud } from "./Hud";
 import { EndScreen } from "./EndScreen";
-import styles from "./game.module.css";
 
 type FeedbackInput =
   | { kind: "valid"; slotIndex: number }
-  | { kind: "invalid"; slotIndex?: number; cardId: string }
-  | { kind: "expand" }
-  | { kind: "action" };
+  | { kind: "invalid"; slotIndex?: number; cardId: string };
 
 type Feedback = FeedbackInput & { id: number };
 
-/** Ticking clock: state only ever updates from inside the interval callback
- * (never synchronously during render), starting from a static placeholder
- * so there's no impure call in the initializer either. Mirrors the identical,
- * already-verified pattern in WordBlitzGame.tsx. useSyncExternalStore is the
- * wrong tool here — its getSnapshot must be referentially stable between
- * calls unless the store truly changed, but Date.now() never is, which
- * causes React to treat every re-render as a fresh external change and loop
- * (this is exactly what caused the "Maximum update depth exceeded" crash). */
+/** Ticking clock. State only ever updates from inside the interval callback,
+ * never synchronously during render (useSyncExternalStore is the wrong tool:
+ * its getSnapshot must be stable between calls, and Date.now() never is). */
 function useNow(intervalMs: number): number {
   const [now, setNow] = useState(0);
   useEffect(() => {
@@ -62,6 +62,8 @@ export function MultiplayerGame({
   const [armedCardId, setArmedCardId] = useState<string | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [cooldowns, setCooldowns] = useState<Cooldowns>(initialCooldowns());
+  const [hint, setHint] = useState<{ slotIndex: number; cardId: string } | null>(null);
   const now = useNow(100);
   const [stats, setStats] = useState({ draws: 0, swaps: 0 });
   const muted = useSyncExternalStore(subscribeMuted, getMutedSnapshot, getMutedServerSnapshot);
@@ -79,28 +81,22 @@ export function MultiplayerGame({
     feedbackId += 1;
     setFeedback({ ...f, id: feedbackId });
     if (f.kind === "valid") sound.valid();
-    else if (f.kind === "invalid") {
+    else {
       sound.invalid();
       if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(70);
-    } else if (f.kind === "expand") sound.expand();
-    else if (f.kind === "action") sound.action();
-  }
-
-  function findArmedCard(): Card | undefined {
-    if (!armedCardId) return undefined;
-    return myHand.find((c) => c.id === armedCardId);
+    }
   }
 
   async function placeLetter(cardId: string, slotIndex: number) {
     const result = await attemptMove(room.id, "place_letter", cardId, slotIndex);
-    if (result.ok) fireFeedback({ kind: "valid", slotIndex });
-    else fireFeedback({ kind: "invalid", slotIndex, cardId });
-  }
-
-  async function placeExpand(cardId: string) {
-    const result = await attemptMove(room.id, "place_expand", cardId);
-    if (result.ok) fireFeedback({ kind: "expand" });
-    else fireFeedback({ kind: "invalid", cardId });
+    if (result.ok) {
+      fireFeedback({ kind: "valid", slotIndex });
+      // Making a word is what recharges abilities, same rule as solo.
+      setCooldowns((c) => tickCooldowns(c));
+      setHint(null);
+    } else {
+      fireFeedback({ kind: "invalid", slotIndex, cardId });
+    }
   }
 
   function handleDragStart(card: Card, e: React.DragEvent) {
@@ -109,34 +105,35 @@ export function MultiplayerGame({
     setDraggingCardId(card.id);
   }
 
-  function handleArm(cardId: string) {
-    setArmedCardId(cardId === "" ? null : cardId);
-  }
-
-  async function handlePlayAction(cardId: string) {
-    const card = myHand.find((c) => c.id === cardId);
-    if (!card || card.kind !== "action") return;
-    if (card.action === "freeze") {
-      const r = await attemptMove(room.id, "freeze", cardId);
-      if (r.ok) fireFeedback({ kind: "action" });
-    }
-    if (card.action === "chaos") {
-      const r = await attemptMove(room.id, "chaos", cardId);
-      if (r.ok) fireFeedback({ kind: "action" });
-    }
-  }
-
-  async function handleTapSlot(slotIndex: number) {
-    const armed = findArmedCard();
+  function handleTapSlot(slotIndex: number) {
+    const armed = armedCardId;
     setArmedCardId(null);
-    if (armed && armed.kind === "letter") await placeLetter(armed.id, slotIndex);
+    if (armed) placeLetter(armed, slotIndex);
   }
 
-  async function handleTapExpandSlot() {
-    const armed = findArmedCard();
-    setArmedCardId(null);
-    if (armed && armed.kind === "action" && armed.action === "expand") {
-      await placeExpand(armed.id);
+  async function handleUsePowerUp(id: PowerUpId) {
+    if (cooldowns[id] > 0) return;
+    const def = POWER_UP_BY_ID[id];
+
+    if (id === "hint") {
+      // Purely local: it only surfaces information this client already has.
+      const dictionary = dictionaries[room.dictionary_id];
+      const found = findHint(room.word ?? "", myHand, dictionary);
+      if (!found) return;
+      setHint(found);
+      setCooldowns((c) => ({ ...c, hint: def.cooldown }));
+      sound.action();
+      return;
+    }
+
+    // Everything else changes shared/server-owned state, so the server
+    // applies it and the realtime subscription feeds the result back.
+    const moveType = id === "chaos" ? "chaos" : id === "freeze" ? "freeze" : "purge";
+    const result = await attemptMove(room.id, moveType, "n/a");
+    if (result.ok) {
+      setCooldowns((c) => ({ ...c, [id]: def.cooldown }));
+      setHint(null);
+      sound.action();
     }
   }
 
@@ -165,13 +162,10 @@ export function MultiplayerGame({
     );
   }
 
-  const armed = findArmedCard();
   const timeLeft = room.ends_at
     ? Math.max(0, (new Date(room.ends_at).getTime() - now) / 1000)
     : 0;
   const shakingCardId = feedback?.kind === "invalid" ? feedback.cardId : null;
-  const canExpand =
-    room.word_length === 4 && myHand.some((c) => c.kind === "action" && c.action === "expand");
   const frozen = Object.fromEntries(
     Object.entries(room.frozen ?? {}).map(([k, v]) => [k, new Date(v).getTime()])
   );
@@ -205,35 +199,29 @@ export function MultiplayerGame({
           onQuit={onLeave}
         />
 
-        <div className="relative">
-          {feedback?.kind === "expand" && <div className={styles.burst} />}
-          <WordGrid
-            word={room.word ?? ""}
-            frozen={frozen}
-            now={now}
-            feedback={feedback}
-            canExpand={canExpand}
-            hasArmedLetter={armed?.kind === "letter"}
-            hasArmedExpand={armed?.kind === "action" && armed.action === "expand"}
-            onDropLetter={(cardId, slotIndex) => placeLetter(cardId, slotIndex)}
-            onDropExpand={(cardId) => placeExpand(cardId)}
-            onTapSlot={handleTapSlot}
-            onTapExpandSlot={handleTapExpandSlot}
-          />
-        </div>
+        <WordGrid
+          word={room.word ?? ""}
+          frozen={frozen}
+          now={now}
+          feedback={feedback}
+          hintedSlot={hint?.slotIndex ?? null}
+          hasArmedLetter={!!armedCardId}
+          onDropLetter={(cardId, slotIndex) => placeLetter(cardId, slotIndex)}
+          onTapSlot={handleTapSlot}
+        />
 
         <PlayerHand
           hand={myHand}
           armedCardId={armedCardId}
           shakingCardId={shakingCardId}
+          hintedCardId={hint?.cardId ?? null}
           draggingCardId={draggingCardId}
-          onArm={handleArm}
-          onPlayAction={handlePlayAction}
+          onArm={(id) => setArmedCardId(id === "" ? null : id)}
           onDragStart={handleDragStart}
           onDragEnd={() => setDraggingCardId(null)}
         />
 
-        <PowerUpLegend />
+        <PowerUpRail cooldowns={cooldowns} onUse={handleUsePowerUp} />
       </div>
     </div>
   );

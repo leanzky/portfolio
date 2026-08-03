@@ -1,6 +1,8 @@
 import { Dictionary, pickRandom, WordLength } from "./dictionary";
 
-/* ---------- Card model ---------- */
+/* ---------- Card model ----------
+   Hands are letters only. Abilities live on the power-up rail with their
+   own cooldowns (see powerups.ts) rather than taking up hand slots. */
 
 export type LetterCard = {
   id: string;
@@ -8,17 +10,7 @@ export type LetterCard = {
   letter: string;
 };
 
-export type ActionKind = "freeze" | "chaos" | "expand";
-
-export type ActionCard = {
-  id: string;
-  kind: "action";
-  action: ActionKind;
-  /** Expand cards carry the letter that gets appended to the word. */
-  letter?: string;
-};
-
-export type Card = LetterCard | ActionCard;
+export type Card = LetterCard;
 
 /* ---------- Letter frequency (approximates Scrabble tile distribution,
    so common letters like vowels come up often enough to find a play) ---------- */
@@ -48,40 +40,18 @@ export function makeLetterCard(letter: string = randomLetter()): LetterCard {
   return { id: nextCardId("l"), kind: "letter", letter };
 }
 
-export function makeActionCard(action: ActionKind): ActionCard {
-  return {
-    id: nextCardId("a"),
-    kind: "action",
-    action,
-    letter: action === "expand" ? randomLetter() : undefined,
-  };
-}
-
 /* ---------- Dealing a starting hand ---------- */
 
-export type DealOptions = {
-  handSize: number;
-  /** Hardcore mode has no room to grow, so Expand cards are omitted there. */
-  includeExpand: boolean;
-};
+export const HAND_SIZE = 16;
 
-export function dealHand({ handSize, includeExpand }: DealOptions): Card[] {
-  const actionKinds: ActionKind[] = includeExpand
-    ? ["freeze", "chaos", "expand"]
-    : ["freeze", "chaos"];
-
-  const actionCards = actionKinds.map(makeActionCard);
-  const letterCount = handSize - actionCards.length;
-
-  // Guarantee a playable-feeling hand: at least a third of letters are vowels.
+export function dealHand(handSize: number = HAND_SIZE): Card[] {
+  // Guarantee a playable-feeling hand: at least a third of it is vowels.
   const vowels = ["a", "e", "i", "o", "u"];
-  const minVowels = Math.ceil(letterCount / 3);
+  const minVowels = Math.ceil(handSize / 3);
   const letters: string[] = [];
   for (let i = 0; i < minVowels; i++) letters.push(pickRandom(vowels));
-  while (letters.length < letterCount) letters.push(randomLetter());
-
-  const letterCards = letters.map((l) => makeLetterCard(l));
-  return shuffle([...letterCards, ...actionCards]);
+  while (letters.length < handSize) letters.push(randomLetter());
+  return shuffle(letters.map((l) => makeLetterCard(l)));
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -95,19 +65,17 @@ function shuffle<T>(arr: T[]): T[] {
 
 /* ---------- Starter word ---------- */
 
-export function pickStarterWord(dictionary: Dictionary): {
-  word: string;
-  length: WordLength;
-} {
-  const length = dictionary.lengths.includes(4) ? 4 : dictionary.lengths[0];
+export function pickStarterWord(
+  dictionary: Dictionary,
+  length: WordLength
+): string {
   // Prefer the curated everyday-word pool so a round never opens on
   // something obscure; fall back to the full list for dictionaries that
   // don't define one (e.g. the hand-written tech list).
   const pool = dictionary.starters[length]?.length
     ? dictionary.starters[length]!
     : dictionary.wordsByLength[length];
-  const word = pickRandom(pool);
-  return { word, length };
+  return pickRandom(pool);
 }
 
 /* ---------- Play validation ---------- */
@@ -122,7 +90,7 @@ export function tryPlaceLetter(
   slotIndex: number,
   letter: string,
   dictionary: Dictionary,
-  frozenSlots: ReadonlySet<number>
+  frozenSlots: ReadonlySet<number> = new Set()
 ): PlayResult {
   if (frozenSlots.has(slotIndex)) return { ok: false, reason: "frozen" };
 
@@ -135,13 +103,21 @@ export function tryPlaceLetter(
   return { ok: true, nextWord };
 }
 
-/** Append a letter to grow a 4-letter word to 5 (the Expand action). */
-export function tryExpandWord(
+/**
+ * Finds any legal move available from the current hand — the slot to change
+ * and the card to use. Powers the Hint ability.
+ */
+export function findHint(
   word: string,
-  letter: string,
+  hand: Card[],
   dictionary: Dictionary
-): PlayResult {
-  const nextWord = word + letter.toLowerCase();
-  if (!dictionary.trie.has(nextWord)) return { ok: false, reason: "not-a-word" };
-  return { ok: true, nextWord };
+): { slotIndex: number; cardId: string } | null {
+  const options: { slotIndex: number; cardId: string }[] = [];
+  for (let slot = 0; slot < word.length; slot++) {
+    for (const card of hand) {
+      const result = tryPlaceLetter(word, slot, card.letter, dictionary);
+      if (result.ok) options.push({ slotIndex: slot, cardId: card.id });
+    }
+  }
+  return options.length ? pickRandom(options) : null;
 }

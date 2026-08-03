@@ -8,32 +8,28 @@ export function WordGrid({
   frozen,
   now,
   feedback,
-  canExpand,
+  hintedSlot,
   hasArmedLetter,
-  hasArmedExpand,
   onDropLetter,
-  onDropExpand,
   onTapSlot,
-  onTapExpandSlot,
 }: {
   word: string;
-  frozen: Record<number, number>;
+  /** slot index -> ms timestamp when a freeze expires (multiplayer only). */
+  frozen?: Record<number, number>;
   now: number;
   feedback: Feedback | null;
-  canExpand: boolean;
+  /** Slot highlighted by the Hint power-up. */
+  hintedSlot?: number | null;
   hasArmedLetter: boolean;
-  hasArmedExpand: boolean;
   onDropLetter: (cardId: string, slotIndex: number) => void;
-  onDropExpand: (cardId: string) => void;
   onTapSlot: (slotIndex: number) => void;
-  onTapExpandSlot: () => void;
 }) {
   const letters = word.toUpperCase().split("");
 
   return (
     <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap font-mono">
       {letters.map((letter, i) => {
-        const isFrozen = frozen[i] > now;
+        const isFrozen = (frozen?.[i] ?? 0) > now;
         const glow = feedback?.kind === "valid" && feedback.slotIndex === i;
         const shake = feedback?.kind === "invalid" && feedback.slotIndex === i;
 
@@ -64,6 +60,7 @@ export function WordGrid({
                   : "border-green-800",
               glow ? styles.slotGlow : "",
               shake ? styles.slotShake : "",
+              hintedSlot === i ? styles.hinted : "",
             ].join(" ")}
           >
             <span data-testid="slot-letter">{letter}</span>
@@ -75,31 +72,6 @@ export function WordGrid({
           </div>
         );
       })}
-
-      {canExpand && (
-        <div
-          data-testid="expand-slot"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const cardId = e.dataTransfer.getData("text/plain");
-            if (cardId) onDropExpand(cardId);
-          }}
-          onClick={() => {
-            if (hasArmedExpand) onTapExpandSlot();
-          }}
-          className={[
-            "flex items-center justify-center rounded-2xl border-2 border-dashed",
-            "w-14 h-16 sm:w-20 sm:h-24 text-2xl sm:text-3xl text-green-700",
-            hasArmedExpand
-              ? "border-lime-400 text-lime-300"
-              : "border-green-800",
-          ].join(" ")}
-          title="Drop an Expand card here to grow the word to 5 letters"
-        >
-          +
-        </div>
-      )}
     </div>
   );
 }

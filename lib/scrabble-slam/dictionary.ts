@@ -3,21 +3,20 @@ import techWords from "./tech-words.json";
 import { Trie } from "./trie";
 
 export type WordLength = 4 | 5 | 6;
-export type DictionaryId = "standard" | "tech" | "hardcore";
+export type DictionaryId = "standard" | "tech";
+
+export const WORD_LENGTHS: WordLength[] = [4, 5, 6];
 
 export type Dictionary = {
   id: DictionaryId;
   label: string;
   description: string;
-  /** Word lengths this dictionary is played at (hardcore is 6-only). */
-  lengths: WordLength[];
   wordsByLength: Record<WordLength, string[]>;
   /**
    * Everyday words the board is allowed to OPEN on, per length. Much
-   * smaller and stricter than the validation set above, so a round never
-   * starts on something obscure even though the Trie accepts a far wider
-   * vocabulary. (Wordle uses the same split: small answer list, large
-   * accepted-guess list.) Falls back to the full list when absent.
+   * smaller and stricter than the validation set, so a round never starts
+   * on something obscure even though the Trie accepts a far wider
+   * vocabulary. (Wordle uses the same split.) Falls back to the full list.
    */
   starters: Partial<Record<WordLength, string[]>>;
   trie: Trie;
@@ -32,7 +31,6 @@ function buildDictionary(
   id: DictionaryId,
   label: string,
   description: string,
-  lengths: WordLength[],
   source: WordsFile
 ): Dictionary {
   const wordsByLength: WordsByLength = {
@@ -40,12 +38,14 @@ function buildDictionary(
     5: source[5],
     6: source[6],
   };
-  const allWords = lengths.flatMap((len) => wordsByLength[len]);
+  // Words never change length during a round, so one Trie across all
+  // supported lengths is enough — a 4-letter word can only ever become
+  // another 4-letter word.
+  const allWords = WORD_LENGTHS.flatMap((len) => wordsByLength[len]);
   return {
     id,
     label,
     description,
-    lengths,
     wordsByLength,
     starters: source.starters ?? {},
     trie: new Trie(allWords),
@@ -59,23 +59,14 @@ export const dictionaries: Record<DictionaryId, Dictionary> = {
   standard: buildDictionary(
     "standard",
     "Standard English",
-    "Common everyday words. The friendliest place to start.",
-    [4, 5],
+    "Common everyday words.",
     standardSource
   ),
   tech: buildDictionary(
     "tech",
     "Tech Terminology",
-    "Programming and software words. For the developers in the room.",
-    [4, 5],
+    "Programming and software words.",
     techSource
-  ),
-  hardcore: buildDictionary(
-    "hardcore",
-    "Hardcore 6-Letter",
-    "Six-letter words only. No expanding, no mercy.",
-    [6],
-    standardSource
   ),
 };
 

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { dictionaries, DictionaryId } from "@/lib/scrabble-slam/dictionary";
+import {
+  dictionaries,
+  DictionaryId,
+  WORD_LENGTHS,
+  WordLength,
+} from "@/lib/scrabble-slam/dictionary";
 import styles from "./game.module.css";
 
 const DURATIONS = [
@@ -10,14 +15,25 @@ const DURATIONS = [
   { seconds: 60, label: "Blitz", sub: "60s" },
 ];
 
+const LENGTH_BLURB: Record<WordLength, string> = {
+  4: "Easiest",
+  5: "Balanced",
+  6: "Hardest",
+};
+
 export function StartScreen({
   onStart,
   onExit,
 }: {
-  onStart: (dictionaryId: DictionaryId, duration: number) => void;
+  onStart: (
+    dictionaryId: DictionaryId,
+    wordLength: WordLength,
+    duration: number
+  ) => void;
   onExit?: () => void;
 }) {
   const [dictionaryId, setDictionaryId] = useState<DictionaryId>("standard");
+  const [wordLength, setWordLength] = useState<WordLength>(4);
   const [duration, setDuration] = useState(90);
 
   return (
@@ -37,9 +53,33 @@ export function StartScreen({
 
       <div className="mt-10 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
+          Word length
+        </p>
+        <div className="grid grid-cols-3 gap-2.5">
+          {WORD_LENGTHS.map((len) => (
+            <button
+              key={len}
+              onClick={() => setWordLength(len)}
+              className={`rounded-xl border-2 py-4 transition-colors ${
+                wordLength === len
+                  ? "border-green-400 bg-green-400/10"
+                  : "border-green-900 hover:border-green-700"
+              }`}
+            >
+              <p className="font-bold text-2xl text-green-50">{len}</p>
+              <p className="text-[11px] text-green-600 mt-0.5">
+                {LENGTH_BLURB[len]}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-8 text-left">
+        <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
           Dictionary
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
           {Object.values(dictionaries).map((dict) => (
             <button
               key={dict.id}
@@ -82,15 +122,15 @@ export function StartScreen({
       </div>
 
       <button
-        onClick={() => onStart(dictionaryId, duration)}
+        onClick={() => onStart(dictionaryId, wordLength, duration)}
         className="mt-10 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition"
       >
         Start Round
       </button>
 
       <p className="mt-6 text-xs text-green-700 leading-relaxed">
-        On desktop, drag a card onto a letter slot. On phone or tablet, tap a
-        card then tap the slot. Freeze and Chaos cards play instantly on tap.
+        Drag a card onto a letter slot, or tap the card then tap the slot.
+        Power-ups sit on the side and recharge as you make words.
       </p>
 
       {onExit && (

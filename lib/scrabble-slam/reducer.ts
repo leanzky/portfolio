@@ -2,19 +2,29 @@ import { dictionaries, DictionaryId, WordLength } from "./dictionary";
 import {
   Card,
   dealHand,
+  findHint,
+  HAND_SIZE,
   makeLetterCard,
   pickStarterWord,
-  tryExpandWord,
   tryPlaceLetter,
 } from "./engine";
+import {
+  Cooldowns,
+  initialCooldowns,
+  POWER_UP_BY_ID,
+  PowerUpId,
+  tickCooldowns,
+} from "./powerups";
 
 export type GameStatus = "idle" | "playing" | "won" | "timeout";
 
 export type Feedback =
   | { id: number; kind: "valid"; slotIndex: number }
   | { id: number; kind: "invalid"; slotIndex?: number; cardId: string }
-  | { id: number; kind: "expand" }
-  | { id: number; kind: "action" };
+  | { id: number; kind: "power"; powerUp: PowerUpId }
+  | { id: number; kind: "blocked"; powerUp: PowerUpId };
+
+export type Hint = { slotIndex: number; cardId: string } | null;
 
 export type GameState = {
   status: GameStatus;
@@ -22,23 +32,27 @@ export type GameState = {
   word: string;
   wordLength: WordLength;
   hand: Card[];
-  /** slot index -> ms timestamp when the freeze expires */
-  frozen: Record<number, number>;
+  cooldowns: Cooldowns;
+  hint: Hint;
   now: number;
   endAt: number;
   duration: number;
+  wordsPlayed: number;
   draws: number;
   swaps: number;
   feedback: Feedback | null;
 };
 
 export type GameAction =
-  | { type: "START"; dictionaryId: DictionaryId; duration: number }
+  | {
+      type: "START";
+      dictionaryId: DictionaryId;
+      wordLength: WordLength;
+      duration: number;
+    }
   | { type: "TICK"; now: number }
   | { type: "PLACE_LETTER"; cardId: string; slotIndex: number }
-  | { type: "PLACE_EXPAND"; cardId: string }
-  | { type: "PLAY_CHAOS"; cardId: string }
-  | { type: "PLAY_FREEZE"; cardId: string }
+  | { type: "USE_POWER_UP"; powerUp: PowerUpId }
   | { type: "DRAW_CARD" }
   | { type: "SWAP_CARD"; cardId: string }
   | { type: "RESET" };
@@ -55,29 +69,40 @@ export const initialState: GameState = {
   word: "",
   wordLength: 4,
   hand: [],
-  frozen: {},
-  now: Date.now(),
+  cooldowns: initialCooldowns(),
+  hint: null,
+  now: 0,
   endAt: 0,
   duration: 90,
+  wordsPlayed: 0,
   draws: 0,
   swaps: 0,
   feedback: null,
 };
 
+function shuffleIndexes(count: number, take: number): Set<number> {
+  const idx = Array.from({ length: count }, (_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [idx[i], idx[j]] = [idx[j], idx[i]];
+  }
+  return new Set(idx.slice(0, take));
+}
+
 export function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "START": {
       const dictionary = dictionaries[action.dictionaryId];
-      const { word, length } = pickStarterWord(dictionary);
-      const includeExpand = dictionary.lengths.includes(5);
+      const word = pickStarterWord(dictionary, action.wordLength);
       const now = Date.now();
       return {
         ...initialState,
         status: "playing",
         dictionaryId: action.dictionaryId,
         word,
-        wordLength: length,
-        hand: dealHand({ handSize: 16, includeExpand }),
+        wordLength: action.wordLength,
+        hand: dealHand(HAND_SIZE),
+        cooldowns: initialCooldowns(),
         now,
         endAt: now + action.duration * 1000,
         duration: action.duration,
@@ -95,21 +120,14 @@ export function reducer(state: GameState, action: GameAction): GameState {
     case "PLACE_LETTER": {
       if (state.status !== "playing") return state;
       const card = state.hand.find((c) => c.id === action.cardId);
-      if (!card || card.kind !== "letter") return state;
+      if (!card) return state;
 
       const dictionary = dictionaries[state.dictionaryId];
-      const frozenSlots = new Set(
-        Object.entries(state.frozen)
-          .filter(([, expiresAt]) => expiresAt > state.now)
-          .map(([slot]) => Number(slot))
-      );
-
       const result = tryPlaceLetter(
         state.word,
         action.slotIndex,
         card.letter,
-        dictionary,
-        frozenSlots
+        dictionary
       );
 
       if (!result.ok) {
@@ -129,6 +147,10 @@ export function reducer(state: GameState, action: GameAction): GameState {
         ...state,
         word: result.nextWord,
         hand: nextHand,
+        // Playing a word is what earns abilities back.
+        cooldowns: tickCooldowns(state.cooldowns),
+        wordsPlayed: state.wordsPlayed + 1,
+        hint: null,
         status: nextHand.length === 0 ? "won" : state.status,
         feedback: {
           id: nextFeedbackId(),
@@ -138,69 +160,75 @@ export function reducer(state: GameState, action: GameAction): GameState {
       };
     }
 
-    case "PLACE_EXPAND": {
-      if (state.status !== "playing" || state.wordLength !== 4) return state;
-      const card = state.hand.find((c) => c.id === action.cardId);
-      if (!card || card.kind !== "action" || card.action !== "expand" || !card.letter) {
-        return state;
-      }
+    case "USE_POWER_UP": {
+      if (state.status !== "playing") return state;
+      const def = POWER_UP_BY_ID[action.powerUp];
+      if (!def) return state;
 
-      const dictionary = dictionaries[state.dictionaryId];
-      const result = tryExpandWord(state.word, card.letter, dictionary);
-
-      if (!result.ok) {
+      // Still cooling down: reject with feedback instead of silently no-oping.
+      if (state.cooldowns[action.powerUp] > 0) {
         return {
           ...state,
-          feedback: { id: nextFeedbackId(), kind: "invalid", cardId: card.id },
+          feedback: {
+            id: nextFeedbackId(),
+            kind: "blocked",
+            powerUp: action.powerUp,
+          },
         };
       }
 
-      const nextHand = state.hand.filter((c) => c.id !== card.id);
-      return {
+      const spend = (next: Partial<GameState>): GameState => ({
         ...state,
-        word: result.nextWord,
-        wordLength: 5,
-        hand: nextHand,
-        status: nextHand.length === 0 ? "won" : state.status,
-        feedback: { id: nextFeedbackId(), kind: "expand" },
-      };
-    }
+        ...next,
+        cooldowns: { ...state.cooldowns, [action.powerUp]: def.cooldown },
+        feedback: {
+          id: nextFeedbackId(),
+          kind: "power",
+          powerUp: action.powerUp,
+        },
+      });
 
-    case "PLAY_CHAOS": {
-      if (state.status !== "playing") return state;
-      const card = state.hand.find((c) => c.id === action.cardId);
-      if (!card || card.kind !== "action" || card.action !== "chaos") return state;
+      switch (action.powerUp) {
+        case "hint": {
+          const dictionary = dictionaries[state.dictionaryId];
+          const hint = findHint(state.word, state.hand, dictionary);
+          // No legal move exists — don't burn the cooldown on nothing.
+          if (!hint) {
+            return {
+              ...state,
+              feedback: {
+                id: nextFeedbackId(),
+                kind: "blocked",
+                powerUp: "hint",
+              },
+            };
+          }
+          return spend({ hint });
+        }
 
-      const nextHand = state.hand
-        .filter((c) => c.id !== card.id)
-        .concat(makeLetterCard(), makeLetterCard());
+        case "chaos": {
+          const replace = shuffleIndexes(state.hand.length, Math.min(4, state.hand.length));
+          return spend({
+            hand: state.hand.map((c, i) => (replace.has(i) ? makeLetterCard() : c)),
+            hint: null,
+          });
+        }
 
-      return {
-        ...state,
-        hand: nextHand,
-        feedback: { id: nextFeedbackId(), kind: "action" },
-      };
-    }
+        case "freeze":
+          return spend({ endAt: state.endAt + 8000 });
 
-    case "PLAY_FREEZE": {
-      if (state.status !== "playing") return state;
-      const card = state.hand.find((c) => c.id === action.cardId);
-      if (!card || card.kind !== "action" || card.action !== "freeze") return state;
+        case "purge": {
+          const nextHand = state.hand.slice(0, Math.max(0, state.hand.length - 2));
+          return spend({
+            hand: nextHand,
+            hint: null,
+            status: nextHand.length === 0 ? "won" : state.status,
+          });
+        }
 
-      const candidates = Array.from({ length: state.wordLength }, (_, i) => i).filter(
-        (i) => !(state.frozen[i] > state.now)
-      );
-      const targets = candidates.length > 0
-        ? candidates
-        : Array.from({ length: state.wordLength }, (_, i) => i);
-      const slot = targets[Math.floor(Math.random() * targets.length)];
-
-      return {
-        ...state,
-        hand: state.hand.filter((c) => c.id !== card.id),
-        frozen: { ...state.frozen, [slot]: state.now + 5000 },
-        feedback: { id: nextFeedbackId(), kind: "action" },
-      };
+        default:
+          return state;
+      }
     }
 
     case "DRAW_CARD": {
@@ -224,13 +252,14 @@ export function reducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         hand: nextHand,
+        hint: null,
         swaps: state.swaps + 1,
         endAt: Math.max(state.now + 50, state.endAt - 3000),
       };
     }
 
     case "RESET":
-      return { ...initialState, now: Date.now() };
+      return { ...initialState };
 
     default:
       return state;

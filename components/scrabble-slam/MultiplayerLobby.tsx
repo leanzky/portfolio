@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { dictionaries, DictionaryId } from "@/lib/scrabble-slam/dictionary";
+import {
+  dictionaries,
+  DictionaryId,
+  WORD_LENGTHS,
+  WordLength,
+} from "@/lib/scrabble-slam/dictionary";
 import { ensureAnonymousSession } from "@/lib/supabase-client";
 import { createRoom, joinRoom } from "@/lib/scrabble-slam/multiplayer-actions";
 
@@ -16,6 +21,7 @@ export function MultiplayerLobby({
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [dictionaryId, setDictionaryId] = useState<DictionaryId>("standard");
+  const [wordLength, setWordLength] = useState<WordLength>(4);
   const [duration, setDuration] = useState(90);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +39,7 @@ export function MultiplayerLobby({
       setBusy(false);
       return;
     }
-    const result = await createRoom(dictionaryId, duration, name.trim());
+    const result = await createRoom(dictionaryId, duration, name.trim(), wordLength);
     setBusy(false);
     if (!result.ok) {
       setError(result.reason ?? "Couldn't create the room.");
@@ -123,9 +129,29 @@ export function MultiplayerLobby({
         <>
           <div className="mt-6">
             <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2">
-              Dictionary
+              Word length
             </p>
             <div className="grid grid-cols-3 gap-2">
+              {WORD_LENGTHS.map((len) => (
+                <button
+                  key={len}
+                  onClick={() => setWordLength(len)}
+                  className={`rounded-lg border-2 py-2 text-sm font-bold transition-colors ${
+                    wordLength === len
+                      ? "border-green-400 bg-green-400/10 text-green-50"
+                      : "border-green-900 text-green-600 hover:border-green-700"
+                  }`}
+                >
+                  {len}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2">
+              Dictionary
+            </p>
+            <div className="grid grid-cols-2 gap-2">
               {Object.values(dictionaries).map((dict) => (
                 <button
                   key={dict.id}
