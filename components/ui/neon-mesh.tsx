@@ -129,7 +129,7 @@ export function NeonMesh({
             points = [];
             constraints = [];
 
-            const spacing = 42;
+            const spacing = 58;
             const cols = Math.ceil((width * 1.1) / spacing) + 1;
             const rows = Math.ceil((height * 1.1) / spacing) + 1;
 
@@ -322,9 +322,9 @@ export function NeonMesh({
                     ? neonAccent
                     : `rgba(${baseMeshColor}, ${Math.min(
                         1,
-                        Math.max(0.1, (isDarkMode ? 0.25 : 0.4) * avgScale)
+                        Math.max(0.4, (isDarkMode ? 0.65 : 0.55) * avgScale)
                     )})`;
-                ctx.lineWidth = isHot ? 2 * avgScale : 0.8 * avgScale;
+                ctx.lineWidth = isHot ? 2.2 * avgScale : 1.4 * avgScale;
 
                 ctx.beginPath();
                 ctx.moveTo(c.p1.projX, c.p1.projY);

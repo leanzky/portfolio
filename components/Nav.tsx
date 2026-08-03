@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { site } from "@/data/site";
 
 const links = [
@@ -53,6 +54,12 @@ export function Nav() {
               {link.label}
             </a>
           ))}
+          <Link
+            href="/calendar"
+            className="text-sm text-muted hover:text-foreground transition-colors"
+          >
+            Calendar
+          </Link>
           <a
             href={site.ctaLink}
             className="text-sm font-medium bg-accent text-accent-foreground px-4 py-2 rounded-full hover:opacity-85 transition-opacity"
@@ -96,6 +103,13 @@ export function Nav() {
               {link.label}
             </a>
           ))}
+          <Link
+            href="/calendar"
+            className="text-sm text-muted hover:text-foreground transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Calendar
+          </Link>
           <a
             href={site.ctaLink}
             className="text-sm font-medium bg-accent text-accent-foreground px-4 py-2.5 rounded-full text-center"
