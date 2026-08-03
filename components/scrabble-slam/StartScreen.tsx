@@ -11,8 +11,10 @@ const DURATIONS = [
 
 export function StartScreen({
   onStart,
+  onExit,
 }: {
   onStart: (dictionaryId: DictionaryId, duration: number) => void;
+  onExit?: () => void;
 }) {
   const [dictionaryId, setDictionaryId] = useState<DictionaryId>("standard");
   const [duration, setDuration] = useState(90);
@@ -87,6 +89,15 @@ export function StartScreen({
         On desktop, drag a card onto a letter slot. On phone or tablet, tap a
         card then tap the slot. Freeze and Chaos cards play instantly on tap.
       </p>
+
+      {onExit && (
+        <button
+          onClick={onExit}
+          className="mt-6 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+        >
+          ← Back to game modes
+        </button>
+      )}
     </div>
   );
 }

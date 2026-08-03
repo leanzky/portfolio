@@ -17,7 +17,7 @@ import { PlayerHand } from "./PlayerHand";
 import { EndScreen } from "./EndScreen";
 import styles from "./game.module.css";
 
-export function WordBlitzGame() {
+export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [armedCardId, setArmedCardId] = useState<string | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
@@ -121,6 +121,7 @@ export function WordBlitzGame() {
           onStart={(dictionaryId, duration) =>
             dispatch({ type: "START", dictionaryId, duration })
           }
+          onExit={onExit}
         />
       )}
 

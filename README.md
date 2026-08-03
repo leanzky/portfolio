@@ -132,6 +132,28 @@ To skip the form entirely and use a booking link instead, set `ctaLink` to a Cal
 
 ---
 
+## Scrabble Slam! (the game at /scrabble-slam)
+
+A word game linked from the Selected Work section. Solo mode needs nothing extra — it's fully client-side. Multiplayer needs a Supabase project.
+
+### Multiplayer setup
+
+1. Create a Supabase project.
+2. In **Authentication → Sign In / Providers**, enable **Anonymous sign-ins** (players get a seat with no login screen).
+3. In the **SQL Editor**, run `supabase/migrations/0001_scrabble_slam_multiplayer.sql`, then `supabase/migrations/0002_seed_words.sql`, in that order.
+4. Add these env vars (locally in `.env.local`, and in your host's project settings for production — see Deploying below):
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+   ```
+   Both are safe to expose to the browser — the anon/publishable key is meant to be public, protected by the Row Level Security policies in the migration, not by secrecy. Never put the `service_role` key here.
+
+If these env vars are absent, the "Play with a Friend" option on the game's mode-select screen disables itself automatically rather than breaking.
+
+### Known issue: realtime push is unreliable, polling covers it
+
+Supabase's realtime push (`postgres_changes`) sometimes doesn't deliver updates from one player's browser to another's, for a reason not yet root-caused — verified to *not* be the database, RLS, the publication setup, or Chromium/Playwright itself (raw `supabase-js` calls work fine from both Node and a real browser tab outside this app). As a reliability net, `lib/scrabble-slam/useMultiplayerRoom.ts` also polls the room/players/hand every 1.5s regardless of whether push delivery worked, so the game stays fully correct and playable — opponents' moves just take up to ~1.5s to visibly land instead of arriving instantly. If you want to chase the root cause further, that hook is where to start; the two symptoms to watch for are (a) the channel reports `SUBSCRIBED` status successfully, yet (b) events from another browser context never fire the `.on('postgres_changes', ...)` callback.
+
 ## Design changes
 
 | What | Where |
@@ -148,5 +170,7 @@ Every section component lives in `components/` — one file per section (`Nav`, 
 ## Deploying
 
 The easiest path is [Vercel](https://vercel.com/new): push this folder to a GitHub repository, import it in Vercel, and it deploys on every push. Any Node host also works: `npm run build && npm start`.
+
+If multiplayer is set up, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` under the Vercel project's **Settings → Environment Variables** (they're gitignored locally via `.env.local`, so Vercel won't have them otherwise, and "Play with a Friend" will just stay disabled until they're added).
 
 After deploying, remember to do one test contact-form submission to activate FormSubmit (see above).
