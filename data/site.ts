@@ -12,7 +12,9 @@ export type Project = {
   name: string;
   description: string;
   tags: string[];
-  url?: string; // live site link (optional)
+  url?: string; // external live site link (opens in a new tab)
+  internalHref?: string; // in-site page, e.g. "/scrabble-slam" (opens in the same tab)
+  linkLabel?: string; // overrides the card's link text, e.g. "Play now ->"
   image?: string; // e.g. "/projects/my-app.png" - optional, placeholder shown if missing
 };
 
@@ -118,6 +120,14 @@ export const site = {
     heading: "Selected work",
     subheading: "A few projects I'm proud of.",
     items: [
+      {
+        name: "Scrabble Slam!",
+        description:
+          "A fast-paced solo word game built from scratch: change one letter of the central word at a time to empty your hand before the clock runs out. Freeze, Chaos, and Expand cards add chaos along the way.",
+        tags: ["Game", "React", "Game Design"],
+        internalHref: "/scrabble-slam",
+        linkLabel: "Play now ->",
+      },
       {
         name: "Payformers",
         description:

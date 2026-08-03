@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { site, type Project } from "@/data/site";
 import { Reveal } from "./Reveal";
 import { SectionHeader } from "./SectionHeader";
@@ -35,9 +36,9 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <h3 className="text-lg font-semibold tracking-tight">
             {project.name}
           </h3>
-          {project.url && (
+          {(project.url || project.internalHref) && (
             <span className="text-xs text-muted group-hover:text-foreground transition-colors shrink-0">
-              Visit ↗
+              {project.internalHref ? project.linkLabel ?? "Play now" : "Visit ↗"}
             </span>
           )}
         </div>
@@ -60,7 +61,11 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
 
   return (
     <Reveal delay={(index % 2) * 100}>
-      {project.url ? (
+      {project.internalHref ? (
+        <Link href={project.internalHref} className="block h-full">
+          {card}
+        </Link>
+      ) : project.url ? (
         <a
           href={project.url}
           target="_blank"
