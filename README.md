@@ -140,7 +140,7 @@ A word game linked from the Selected Work section. Solo mode needs nothing extra
 
 1. Create a Supabase project.
 2. In **Authentication → Sign In / Providers**, enable **Anonymous sign-ins** (players get a seat with no login screen).
-3. In the **SQL Editor**, run `supabase/migrations/0001_scrabble_slam_multiplayer.sql`, then `supabase/migrations/0002_seed_words.sql`, in that order.
+3. In the **SQL Editor**, run the migrations in `supabase/migrations/` in filename order (`0001…`, `0002…`, `0003…`, `0004…`).
 4. Add these env vars (locally in `.env.local`, and in your host's project settings for production — see Deploying below):
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -149,6 +149,20 @@ A word game linked from the Selected Work section. Solo mode needs nothing extra
    Both are safe to expose to the browser — the anon/publishable key is meant to be public, protected by the Row Level Security policies in the migration, not by secrecy. Never put the `service_role` key here.
 
 If these env vars are absent, the "Play with a Friend" option on the game's mode-select screen disables itself automatically rather than breaking.
+
+### The word list
+
+`lib/scrabble-slam/standard-words.json` holds ~17.4k words (4–6 letters), built from a blend of:
+
+- **ENABLE** — the public-domain Scrabble lexicon (guarantees every entry is a real, legal word, and contains no proper nouns)
+- **SCOWL size 60** — a human-curated "common enough for a spell checker" tier, used as the recognisability filter
+- **top-80k word frequency** — catches very common words SCOWL ranks lower
+
+Profanity and slurs are stripped. The file also carries a much stricter `starters` pool (~1.3k everyday 4-letter words): the board only ever *opens* on one of these, so a round never starts on something obscure, while the full set stays valid for plays. Same split Wordle uses.
+
+To regenerate it after changing sources, the build scripts live in the scratchpad — or just edit the JSON directly; its shape is `{ "4": [...], "5": [...], "6": [...], "starters": { "4": [...], "6": [...] } }`.
+
+Multiplayer reads the same words from the `words` table, so `0004_expand_dictionary.sql` must be run for both modes to agree.
 
 ### Known issue: realtime push is unreliable, polling covers it
 

@@ -14,6 +14,7 @@ import { StartScreen } from "./StartScreen";
 import { Hud } from "./Hud";
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
+import { PowerUpLegend } from "./PowerUpLegend";
 import { EndScreen } from "./EndScreen";
 import styles from "./game.module.css";
 
@@ -178,6 +179,8 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
             onDragStart={handleDragStart}
             onDragEnd={() => setDraggingCardId(null)}
           />
+
+          <PowerUpLegend />
         </div>
       )}
 

@@ -27,8 +27,11 @@ export function PlayerHand({
       <p className="mb-2 text-center text-[11px] uppercase tracking-[0.2em] text-green-700">
         Your hand · {hand.length} card{hand.length === 1 ? "" : "s"}
       </p>
+      {/* Deliberately not a scroll container: the tray already wraps, and
+          overflow-x-auto would clip the cards' tooltips while letting their
+          absolute width inflate scrollWidth, knocking the row off-centre. */}
       <div
-        className="flex flex-wrap justify-center gap-2 sm:gap-2.5 max-w-3xl mx-auto px-2 py-1 overflow-x-auto"
+        className="flex flex-wrap justify-center gap-2 sm:gap-2.5 max-w-3xl mx-auto px-2 py-1"
         role="list"
         aria-label="Your cards"
       >

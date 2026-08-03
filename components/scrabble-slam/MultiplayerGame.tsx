@@ -14,6 +14,7 @@ import {
 import { useSyncExternalStore } from "react";
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
+import { PowerUpLegend } from "./PowerUpLegend";
 import { Hud } from "./Hud";
 import { EndScreen } from "./EndScreen";
 import styles from "./game.module.css";
@@ -231,6 +232,8 @@ export function MultiplayerGame({
           onDragStart={handleDragStart}
           onDragEnd={() => setDraggingCardId(null)}
         />
+
+        <PowerUpLegend />
       </div>
     </div>
   );

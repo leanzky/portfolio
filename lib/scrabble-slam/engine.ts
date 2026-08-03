@@ -100,7 +100,13 @@ export function pickStarterWord(dictionary: Dictionary): {
   length: WordLength;
 } {
   const length = dictionary.lengths.includes(4) ? 4 : dictionary.lengths[0];
-  const word = pickRandom(dictionary.wordsByLength[length]);
+  // Prefer the curated everyday-word pool so a round never opens on
+  // something obscure; fall back to the full list for dictionaries that
+  // don't define one (e.g. the hand-written tech list).
+  const pool = dictionary.starters[length]?.length
+    ? dictionary.starters[length]!
+    : dictionary.wordsByLength[length];
+  const word = pickRandom(pool);
   return { word, length };
 }
 
