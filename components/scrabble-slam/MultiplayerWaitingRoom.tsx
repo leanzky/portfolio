@@ -34,36 +34,36 @@ export function MultiplayerWaitingRoom({
   }
 
   return (
-    <div className="max-w-md mx-auto px-6 py-16 text-center">
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-teal-400">
+    <div className="max-w-md mx-auto px-6 py-16 text-center font-mono">
+      <p className="text-xs uppercase tracking-[0.3em] text-green-500">
         Room code
       </p>
-      <p className="mt-2 font-display text-5xl font-bold tracking-[0.15em] text-white">
+      <p className="mt-2 text-5xl font-bold tracking-[0.15em] text-green-50">
         {room.code}
       </p>
-      <p className="mt-3 text-slate-400">Share this code with your friend.</p>
+      <p className="mt-3 text-green-600">Share this code with your friend.</p>
 
       <div className="mt-8 space-y-2">
         {players.map((p) => (
           <div
             key={p.id}
-            className="flex items-center justify-between rounded-xl border border-slate-700 px-4 py-3"
+            className="flex items-center justify-between rounded-xl border border-green-800 px-4 py-3"
           >
-            <span className="font-bold text-white">
+            <span className="font-bold text-green-50">
               {p.name}
               {p.id === myPlayerId && (
-                <span className="ml-2 text-xs text-slate-500">(you)</span>
+                <span className="ml-2 text-xs text-green-700">(you)</span>
               )}
             </span>
             {p.is_host && (
-              <span className="text-[11px] uppercase tracking-wide text-amber-300 font-bold">
+              <span className="text-[11px] uppercase tracking-wide text-lime-300 font-bold">
                 Host
               </span>
             )}
           </div>
         ))}
         {players.length < 2 && (
-          <div className="rounded-xl border border-dashed border-slate-700 px-4 py-3 text-slate-500 text-sm">
+          <div className="rounded-xl border border-dashed border-green-800 px-4 py-3 text-green-700 text-sm">
             Waiting for another player to join…
           </div>
         )}
@@ -73,18 +73,18 @@ export function MultiplayerWaitingRoom({
         <button
           onClick={handleStart}
           disabled={starting || players.length < 2}
-          className="mt-8 w-full rounded-xl bg-teal-400 text-slate-950 font-display font-bold text-lg py-4 hover:brightness-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="mt-8 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
         >
           {starting ? "Starting…" : "Start game"}
         </button>
       ) : (
-        <p className="mt-8 text-slate-400">Waiting for the host to start the game…</p>
+        <p className="mt-8 text-green-600">Waiting for the host to start the game…</p>
       )}
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
       <button
         onClick={onLeave}
-        className="mt-6 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+        className="mt-6 text-green-700 hover:text-green-400 text-sm transition-colors"
       >
         ← Leave room
       </button>

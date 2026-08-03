@@ -3,11 +3,11 @@
 
 @keyframes slotGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.9);
-    background-color: rgba(45, 212, 191, 0.35);
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.9), 0 0 24px 4px rgba(57, 255, 20, 0.6);
+    background-color: rgba(74, 222, 128, 0.35);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(45, 212, 191, 0);
+    box-shadow: 0 0 0 14px rgba(74, 222, 128, 0), 0 0 0 0 rgba(57, 255, 20, 0);
     background-color: transparent;
   }
 }
@@ -107,7 +107,7 @@
   width: 90%;
   height: 90%;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.55), transparent 70%);
+  background: radial-gradient(circle, rgba(57, 255, 20, 0.55), transparent 70%);
   animation: burst 0.55s ease-out forwards;
   pointer-events: none;
 }
@@ -122,5 +122,84 @@
 
 .armed {
   transform: translateY(-10px) scale(1.05);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(57, 255, 20, 0.35);
+}
+
+/* ---------- Extra "computer green" polish ---------- */
+
+@keyframes dealIn {
+  from {
+    transform: translateY(24px) scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.dealIn {
+  animation: dealIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes crtFlicker {
+  0%,
+  100% {
+    opacity: 0.06;
+  }
+  50% {
+    opacity: 0.03;
+  }
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(57, 255, 20, 0.4) 0px,
+    rgba(57, 255, 20, 0.4) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: crtFlicker 5s ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.cursorBlink {
+  animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(57, 255, 20, 0.9);
+  }
+}
+
+.glowPulse {
+  animation: glowPulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dealIn,
+  .scanlines,
+  .cursorBlink,
+  .glowPulse {
+    animation: none;
+  }
 }

@@ -30,20 +30,20 @@ export function Hud({
   const pct = Math.max(0, Math.min(1, timeLeft / duration));
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4">
+    <div className="w-full max-w-3xl mx-auto px-4 font-mono">
       <div className="flex items-center justify-between gap-3 text-sm">
         <button
           onClick={onQuit}
-          className="text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-green-700 hover:text-green-300 transition-colors"
         >
           ← Quit
         </button>
-        <span className="font-mono uppercase tracking-widest text-slate-400 text-xs">
+        <span className="uppercase tracking-widest text-green-600 text-xs">
           {dictionaries[dictionaryId].label}
         </span>
         <button
           onClick={onToggleMute}
-          className="text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-green-700 hover:text-green-300 transition-colors"
           aria-label={muted ? "Unmute sound" : "Mute sound"}
         >
           {muted ? "🔇" : "🔊"}
@@ -52,21 +52,21 @@ export function Hud({
 
       <div className="mt-3 flex items-center gap-4">
         <div
-          className={`font-display font-bold text-2xl tabular-nums ${
-            urgent ? `text-rose-400 ${styles.timerUrgent}` : "text-slate-100"
+          className={`font-bold text-2xl tabular-nums ${
+            urgent ? `text-rose-400 ${styles.timerUrgent}` : "text-green-50"
           }`}
         >
           {Math.ceil(timeLeft)}s
         </div>
-        <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+        <div className="flex-1 h-2 rounded-full bg-green-950 overflow-hidden">
           <div
             className={`h-full rounded-full transition-[width] duration-200 ease-linear ${
-              urgent ? "bg-rose-500" : "bg-teal-400"
+              urgent ? "bg-rose-500" : "bg-green-400"
             }`}
             style={{ width: `${pct * 100}%` }}
           />
         </div>
-        <div className="font-display font-bold text-lg text-amber-300 whitespace-nowrap">
+        <div className="font-bold text-lg text-lime-300 whitespace-nowrap">
           {cardsLeft} left
         </div>
       </div>
@@ -74,7 +74,7 @@ export function Hud({
       <div className="mt-3 flex items-center justify-center gap-3">
         <button
           onClick={onDraw}
-          className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-300 hover:border-slate-400 hover:text-white transition-colors"
+          className="rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors"
           title="Stuck? Draw a fresh letter card (grows your hand by 1)"
         >
           Draw card
@@ -82,7 +82,7 @@ export function Hud({
         <button
           onClick={onSwap}
           disabled={!canSwap}
-          className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-slate-300 hover:border-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           title="Select a card first, then swap it for a new one (costs 3 seconds)"
         >
           Swap selected (−3s)

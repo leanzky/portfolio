@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { dictionaries, DictionaryId } from "@/lib/scrabble-slam/dictionary";
-import { ensureAnonymousSession } from "@/lib/scrabble-slam/supabase-client";
+import { ensureAnonymousSession } from "@/lib/supabase-client";
 import { createRoom, joinRoom } from "@/lib/scrabble-slam/multiplayer-actions";
 
 const DURATIONS = [90, 120, 60];
@@ -75,11 +75,11 @@ export function MultiplayerLobby({
   }
 
   return (
-    <div className="max-w-md mx-auto px-6 py-12">
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-teal-400 text-center">
+    <div className="max-w-md mx-auto px-6 py-12 font-mono">
+      <p className="text-xs uppercase tracking-[0.3em] text-green-500 text-center">
         Multiplayer
       </p>
-      <h1 className="mt-3 font-display text-3xl sm:text-4xl font-bold tracking-tight text-white text-center">
+      <h1 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-green-50 text-center">
         Play with a friend
       </h1>
 
@@ -88,8 +88,8 @@ export function MultiplayerLobby({
           onClick={() => setMode("create")}
           className={`rounded-xl border-2 py-3 font-bold text-sm transition-colors ${
             mode === "create"
-              ? "border-teal-400 bg-teal-400/10 text-white"
-              : "border-slate-700 text-slate-400 hover:border-slate-500"
+              ? "border-green-400 bg-green-400/10 text-green-50"
+              : "border-green-900 text-green-600 hover:border-green-700"
           }`}
         >
           Create a room
@@ -98,8 +98,8 @@ export function MultiplayerLobby({
           onClick={() => setMode("join")}
           className={`rounded-xl border-2 py-3 font-bold text-sm transition-colors ${
             mode === "join"
-              ? "border-teal-400 bg-teal-400/10 text-white"
-              : "border-slate-700 text-slate-400 hover:border-slate-500"
+              ? "border-green-400 bg-green-400/10 text-green-50"
+              : "border-green-900 text-green-600 hover:border-green-700"
           }`}
         >
           Join a room
@@ -107,7 +107,7 @@ export function MultiplayerLobby({
       </div>
 
       <div className="mt-6">
-        <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+        <label className="block text-xs font-bold uppercase tracking-wide text-green-700 mb-1.5">
           Your name
         </label>
         <input
@@ -115,14 +115,14 @@ export function MultiplayerLobby({
           onChange={(e) => setName(e.target.value)}
           maxLength={20}
           placeholder="e.g. Leandro"
-          className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none focus:border-teal-400"
+          className="w-full rounded-xl border border-green-800 bg-[#08140a] px-4 py-3 text-green-50 outline-none focus:border-green-400"
         />
       </div>
 
       {mode === "create" ? (
         <>
           <div className="mt-6">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2">
               Dictionary
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -132,8 +132,8 @@ export function MultiplayerLobby({
                   onClick={() => setDictionaryId(dict.id)}
                   className={`rounded-lg border-2 py-2 text-xs font-bold transition-colors ${
                     dictionaryId === dict.id
-                      ? "border-teal-400 bg-teal-400/10 text-white"
-                      : "border-slate-700 text-slate-400 hover:border-slate-500"
+                      ? "border-green-400 bg-green-400/10 text-green-50"
+                      : "border-green-900 text-green-600 hover:border-green-700"
                   }`}
                 >
                   {dict.label}
@@ -142,7 +142,7 @@ export function MultiplayerLobby({
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2">
               Timer
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -152,8 +152,8 @@ export function MultiplayerLobby({
                   onClick={() => setDuration(d)}
                   className={`rounded-lg border-2 py-2 text-xs font-bold transition-colors ${
                     duration === d
-                      ? "border-amber-400 bg-amber-400/10 text-white"
-                      : "border-slate-700 text-slate-400 hover:border-slate-500"
+                      ? "border-lime-400 bg-lime-400/10 text-green-50"
+                      : "border-green-900 text-green-600 hover:border-green-700"
                   }`}
                 >
                   {d}s
@@ -164,7 +164,7 @@ export function MultiplayerLobby({
           <button
             onClick={handleCreate}
             disabled={busy}
-            className="mt-8 w-full rounded-xl bg-teal-400 text-slate-950 font-display font-bold text-lg py-4 hover:brightness-95 transition disabled:opacity-50"
+            className="mt-8 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition disabled:opacity-50"
           >
             {busy ? "Creating…" : "Create room"}
           </button>
@@ -172,7 +172,7 @@ export function MultiplayerLobby({
       ) : (
         <>
           <div className="mt-6">
-            <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wide text-green-700 mb-1.5">
               Room code
             </label>
             <input
@@ -180,13 +180,13 @@ export function MultiplayerLobby({
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               maxLength={6}
               placeholder="e.g. AB3XQ9"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white font-mono tracking-widest uppercase outline-none focus:border-teal-400"
+              className="w-full rounded-xl border border-green-800 bg-[#08140a] px-4 py-3 text-green-50 tracking-widest uppercase outline-none focus:border-green-400"
             />
           </div>
           <button
             onClick={handleJoin}
             disabled={busy}
-            className="mt-8 w-full rounded-xl bg-teal-400 text-slate-950 font-display font-bold text-lg py-4 hover:brightness-95 transition disabled:opacity-50"
+            className="mt-8 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition disabled:opacity-50"
           >
             {busy ? "Joining…" : "Join room"}
           </button>

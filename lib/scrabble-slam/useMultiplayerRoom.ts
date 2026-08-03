@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getSupabaseClient } from "./supabase-client";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { checkTimeout } from "./multiplayer-actions";
 import type { PlayerPublicRow, PlayerRow, RoomRow } from "./multiplayer-types";
 import type { Card } from "./engine";

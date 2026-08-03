@@ -127,6 +127,7 @@ export const site = {
         tags: ["Game", "React", "Game Design"],
         internalHref: "/scrabble-slam",
         linkLabel: "Play now ->",
+        image: "/projects/scrabble-slam.webp",
       },
       {
         name: "Payformers",

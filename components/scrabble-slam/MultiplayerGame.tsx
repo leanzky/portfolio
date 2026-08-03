@@ -178,13 +178,13 @@ export function MultiplayerGame({
   return (
     <div className="min-h-svh flex flex-col justify-center py-8">
       <div className="flex flex-col gap-6 sm:gap-8">
-        <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-3 flex-wrap">
+        <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-3 flex-wrap font-mono">
           {players
             .filter((p) => p.id !== myPlayerId)
             .map((p) => (
               <span
                 key={p.id}
-                className="text-xs font-bold uppercase tracking-wide text-slate-400 rounded-full border border-slate-700 px-3 py-1"
+                className="text-xs font-bold uppercase tracking-wide text-green-400 rounded-full border border-green-800 px-3 py-1"
               >
                 {p.name}: {p.card_count} left
               </span>

@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "./supabase-client";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import type { DictionaryId } from "./dictionary";
 import type { MoveType, RpcResult } from "./multiplayer-types";
 

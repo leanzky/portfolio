@@ -5,9 +5,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 let client: SupabaseClient | null = null;
 
 /**
- * Lazily-created singleton browser client. Multiplayer is entirely
- * optional: if the project isn't configured (no env vars set), this
- * returns null and the UI falls back to "multiplayer unavailable"
+ * Lazily-created singleton browser client, shared by every feature that
+ * talks to the project's one Supabase database (Scrabble Slam multiplayer,
+ * the meal calendar). If the project isn't configured (no env vars set),
+ * this returns null and callers fall back to a "not available" state
  * instead of crashing.
  */
 export function getSupabaseClient(): SupabaseClient | null {

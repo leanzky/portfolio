@@ -154,6 +154,14 @@ If these env vars are absent, the "Play with a Friend" option on the game's mode
 
 Supabase's realtime push (`postgres_changes`) sometimes doesn't deliver updates from one player's browser to another's, for a reason not yet root-caused — verified to *not* be the database, RLS, the publication setup, or Chromium/Playwright itself (raw `supabase-js` calls work fine from both Node and a real browser tab outside this app). As a reliability net, `lib/scrabble-slam/useMultiplayerRoom.ts` also polls the room/players/hand every 1.5s regardless of whether push delivery worked, so the game stays fully correct and playable — opponents' moves just take up to ~1.5s to visibly land instead of arriving instantly. If you want to chase the root cause further, that hook is where to start; the two symptoms to watch for are (a) the channel reports `SUBSCRIBED` status successfully, yet (b) events from another browser context never fire the `.on('postgres_changes', ...)` callback.
 
+## Meal Calendar (the page at /calendar)
+
+A personal, unrelated-to-the-game page: click a day to log how much you ate (1 Meal / 2 Meals / 3 Meals / 4 Meals / Excessive Eating). Not linked from the main nav — reachable at `/calendar` directly.
+
+Shares the SAME Supabase project as the game (same env vars, same "Anonymous sign-ins" setting already enabled for multiplayer). One extra migration:
+
+Run `supabase/migrations/0003_meal_calendar.sql` in the SQL Editor (after the two scrabble-slam ones). Each anonymous browser identity only ever sees its own logged days — same RLS privacy pattern as a player's hand in the game.
+
 ## Design changes
 
 | What | Where |

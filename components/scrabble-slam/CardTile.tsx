@@ -10,17 +10,17 @@ const ACTION_META: Record<
   freeze: {
     label: "Freeze",
     icon: "❄", // ❄
-    className: "bg-cyan-950 border-cyan-400 text-cyan-200",
+    className: "bg-emerald-950 border-emerald-400 text-emerald-200",
   },
   chaos: {
     label: "Chaos",
     icon: "⚡", // ⚡
-    className: "bg-rose-950 border-rose-400 text-rose-200",
+    className: "bg-lime-950 border-lime-400 text-lime-200",
   },
   expand: {
     label: "Expand",
     icon: "⤡", // ⤡
-    className: "bg-amber-950 border-amber-400 text-amber-200",
+    className: "bg-green-950 border-green-400 text-green-200",
   },
 };
 
@@ -30,6 +30,7 @@ export function CardTile({
   shaking,
   dragging = false,
   disabled = false,
+  dealDelayMs,
   onArm,
   onPlayAction,
   onDragStart,
@@ -40,6 +41,8 @@ export function CardTile({
   shaking: boolean;
   dragging?: boolean;
   disabled?: boolean;
+  /** If set, plays a one-time staggered "deal" entrance animation. */
+  dealDelayMs?: number;
   onArm: () => void;
   onPlayAction: () => void;
   onDragStart: (e: React.DragEvent) => void;
@@ -57,16 +60,18 @@ export function CardTile({
       onClick={() => (isTargetable ? onArm() : onPlayAction())}
       disabled={disabled}
       aria-pressed={armed}
+      style={dealDelayMs !== undefined ? { animationDelay: `${dealDelayMs}ms` } : undefined}
       className={[
-        "relative shrink-0 select-none rounded-xl border-2 font-display font-bold",
+        "relative shrink-0 select-none rounded-xl border-2 font-mono font-bold",
         "w-14 h-16 sm:w-16 sm:h-[4.5rem] flex flex-col items-center justify-center gap-0.5",
         "transition-transform duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
         card.kind === "letter"
-          ? "bg-slate-800 border-slate-600 text-slate-50"
+          ? "bg-[#08140a] border-green-800 text-green-50"
           : meta!.className,
         armed ? styles.armed : "",
         shaking ? styles.cardShake : "",
         dragging ? styles.dragging : "",
+        dealDelayMs !== undefined ? styles.dealIn : "",
       ].join(" ")}
       title={
         card.kind === "letter"
@@ -85,7 +90,7 @@ export function CardTile({
             {meta!.label}
           </span>
           {card.action === "expand" && card.letter && (
-            <span className="text-xs font-display font-bold tracking-wide opacity-90">
+            <span className="text-xs font-bold tracking-wide opacity-90">
               +{card.letter.toUpperCase()}
             </span>
           )}
