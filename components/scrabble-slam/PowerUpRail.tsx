@@ -1,6 +1,7 @@
 "use client";
 
 import { POWER_UPS, type Cooldowns, type PowerUpId } from "@/lib/scrabble-slam/powerups";
+import { useT } from "./LanguageToggle";
 import styles from "./game.module.css";
 
 /**
@@ -22,6 +23,7 @@ export function PowerUpRail({
       shown in place of the cooldown (e.g. Freeze in Endless). */
   unavailable?: Partial<Record<PowerUpId, string>>;
 }) {
+  const t = useT();
   return (
     <div
       className={[
@@ -34,16 +36,21 @@ export function PowerUpRail({
       ].join(" ")}
     >
       <p className="hidden lg:block text-[10px] uppercase tracking-[0.2em] text-green-700 mb-0.5">
-        Power-ups
+        {t("power.title")}
       </p>
 
       {POWER_UPS.map((p) => {
         const blockedReason = unavailable?.[p.id];
         const remaining = cooldowns[p.id];
         const ready = remaining === 0 && !disabled && !blockedReason;
+        const label = t(`power.${p.id}.label`);
+        const short = t(`power.${p.id}.short`);
+        const help = t(`power.${p.id}.help`);
         const status = blockedReason
           ? blockedReason
-          : `${remaining} word${remaining === 1 ? "" : "s"} left`;
+          : remaining === 1
+            ? t("power.wordLeft")
+            : t("power.wordsLeft", { n: remaining });
 
         return (
           <div key={p.id} className="group relative">
@@ -51,9 +58,7 @@ export function PowerUpRail({
               type="button"
               onClick={() => onUse(p.id)}
               disabled={!ready}
-              aria-label={`${p.label}. ${p.help}${
-                ready ? "" : ` Unavailable: ${status}.`
-              }`}
+              aria-label={`${label}. ${help}${ready ? "" : ` — ${status}`}`}
               className={[
                 "w-full rounded-xl border-2 px-3 py-2 text-left transition",
                 "flex items-center gap-2.5 lg:gap-2",
@@ -65,10 +70,10 @@ export function PowerUpRail({
               <span className="text-base leading-none shrink-0">{p.icon}</span>
               <span className="min-w-0">
                 <span className="block text-[11px] font-bold uppercase tracking-wide leading-none">
-                  {p.label}
+                  {label}
                 </span>
                 <span className="block text-[10px] leading-tight mt-0.5 opacity-80 truncate">
-                  {ready ? p.short : status}
+                  {ready ? short : status}
                 </span>
               </span>
             </button>
@@ -87,21 +92,19 @@ export function PowerUpRail({
               ].join(" ")}
             >
               <p className="text-[11px] font-bold uppercase tracking-wide text-green-300">
-                {p.label}
+                {label}
                 <span className="ml-1.5 font-normal normal-case text-green-600">
-                  · {p.cooldown}-word cooldown
+                  {t("power.cooldown", { n: p.cooldown })}
                 </span>
               </p>
-              <p className="mt-1 text-[11px] leading-snug text-green-500">
-                {p.help}
-              </p>
+              <p className="mt-1 text-[11px] leading-snug text-green-500">{help}</p>
             </div>
           </div>
         );
       })}
 
       <p className="hidden lg:block text-[10px] leading-snug text-green-800 mt-1">
-        Cooldowns tick down each time you make a word.
+        {t("power.footer")}
       </p>
     </div>
   );

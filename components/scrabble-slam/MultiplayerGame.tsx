@@ -3,11 +3,16 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Card } from "@/lib/scrabble-slam/engine";
 import { findHint, MAX_HAND, shuffle } from "@/lib/scrabble-slam/engine";
-import type { RescueNotice } from "@/lib/scrabble-slam/reducer";
 import { dictionaries, type WordLength } from "@/lib/scrabble-slam/dictionary";
-import type { PlayerPublicRow, RoomRow } from "@/lib/scrabble-slam/multiplayer-types";
-import { attemptMove } from "@/lib/scrabble-slam/multiplayer-actions";
-import type { RpcResult } from "@/lib/scrabble-slam/multiplayer-types";
+import type {
+  PlayerPublicRow,
+  PlayerRow,
+  RoomRow,
+  RpcResult,
+} from "@/lib/scrabble-slam/multiplayer-types";
+import { attemptMove, forceSkipTurn } from "@/lib/scrabble-slam/multiplayer-actions";
+import { colorForSeat } from "@/lib/scrabble-slam/player-colors";
+import type { RescueNotice } from "@/lib/scrabble-slam/reducer";
 import {
   Cooldowns,
   initialCooldowns,
@@ -25,9 +30,13 @@ import {
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
 import { PowerUpRail } from "./PowerUpRail";
+import { PlayerRoster } from "./PlayerRoster";
 import { RescueToast } from "./RescueToast";
+import { SpectatorView } from "./SpectatorView";
 import { Hud } from "./Hud";
 import { EndScreen } from "./EndScreen";
+import { useT } from "./LanguageToggle";
+import styles from "./game.module.css";
 
 type FeedbackInput =
   | { kind: "valid"; slotIndex: number }
@@ -39,7 +48,7 @@ type Feedback = FeedbackInput & { id: number };
  * never synchronously during render (useSyncExternalStore is the wrong tool:
  * its getSnapshot must be stable between calls, and Date.now() never is). */
 function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), intervalMs);
     return () => window.clearInterval(id);
@@ -53,31 +62,49 @@ export function MultiplayerGame({
   room,
   players,
   myHand,
+  visibleHands,
   myPlayerId,
   onLeave,
 }: {
   room: RoomRow;
   players: PlayerPublicRow[];
   myHand: Card[];
+  visibleHands: PlayerRow[];
   myPlayerId: string;
   onLeave: () => void;
 }) {
-  const [armedCardId, setArmedCardId] = useState<string | null>(null);
+  const t = useT();
+  // Selections are stamped with the turn they were made on, so anything left
+  // half-done simply stops counting when the turn moves. Deriving it beats
+  // clearing it in an effect: no cascading render, and no chance of a card
+  // staying armed across a turn boundary and firing when the turn comes back.
+  const [armed, setArmed] = useState<{ id: string; turn: number } | null>(null);
+  const [hintState, setHint] = useState<
+    { slotIndex: number; cardId: string; turn: number } | null
+  >(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [cooldowns, setCooldowns] = useState<Cooldowns>(initialCooldowns());
-  const [hint, setHint] = useState<{ slotIndex: number; cardId: string } | null>(null);
-  const now = useNow(100);
-  const [stats, setStats] = useState({ draws: 0, swaps: 0, wordsPlayed: 0 });
-  // Display order only. The server owns which cards you hold; this just
-  // reorders them locally, and cards it hasn't seen fall to the end.
-  const [handOrder, setHandOrder] = useState<string[]>([]);
   const [rescue, setRescue] = useState<RescueNotice | null>(null);
-
-  // Endless rooms carry no end time at all (see 0007_endless_and_rescue.sql).
-  const endless = room.ends_at === null;
+  const [notice, setNotice] = useState<string | null>(null);
+  const now = useNow(200);
+  const [stats, setStats] = useState({ draws: 0, swaps: 0, wordsPlayed: 0 });
+  const [handOrder, setHandOrder] = useState<string[]>([]);
   const muted = useSyncExternalStore(subscribeMuted, getMutedSnapshot, getMutedServerSnapshot);
   const lastStatus = useRef(room.status);
+
+  const me = players.find((p) => p.id === myPlayerId);
+  const endless = room.duration_seconds === 0;
+  const myTurn = room.current_turn_player_id === myPlayerId;
+  const eliminated = me?.eliminated ?? false;
+  const activePlayer = players.find((p) => p.id === room.current_turn_player_id);
+
+  const armedCardId =
+    armed && armed.turn === room.turn_number && myTurn ? armed.id : null;
+  const hint =
+    hintState && hintState.turn === room.turn_number && myTurn ? hintState : null;
+  const setArmedCardId = (id: string | null) =>
+    setArmed(id ? { id, turn: room.turn_number } : null);
 
   const orderedHand = useMemo(() => {
     if (handOrder.length === 0) return myHand;
@@ -107,34 +134,41 @@ export function MultiplayerGame({
     }
   }
 
-  /** The server rescues a stuck hand automatically; surface it the same way
-      solo does. Shape comes from attempt_move in 0007. */
   function noteRescue(result: RpcResult) {
     const r = result.rescue as
       | { rescued?: boolean; added?: number; word?: string | null }
       | undefined;
     if (!r?.rescued) return;
     feedbackId += 1;
-    setRescue({
-      id: feedbackId,
-      added: r.added ?? 0,
-      rerolled: 0,
-      newWord: r.word ?? null,
-    });
+    setRescue({ id: feedbackId, added: r.added ?? 0, rerolled: 0, newWord: r.word ?? null });
     sound.rescue();
   }
 
+  /** Surfaces what a rejected move actually cost you. */
+  function noteCost(result: RpcResult) {
+    if (result.turn_skipped) setNotice(t("roster.turnSkipped"));
+    else if (typeof result.penalty_ms === "number") {
+      setNotice(t("roster.wrongGuess", { n: Math.round(result.penalty_ms / 1000) }));
+    } else if (result.reason === "not_your_turn") setNotice(t("turn.notYours"));
+  }
+
   async function placeLetter(cardId: string, slotIndex: number) {
+    if (!myTurn) {
+      setNotice(t("turn.notYours"));
+      fireFeedback({ kind: "invalid", slotIndex, cardId });
+      return;
+    }
     const result = await attemptMove(room.id, "place_letter", cardId, slotIndex);
     noteRescue(result);
     if (result.ok) {
       fireFeedback({ kind: "valid", slotIndex });
-      // Making a word is what recharges abilities, same rule as solo.
       setCooldowns((c) => tickCooldowns(c));
       setStats((s) => ({ ...s, wordsPlayed: s.wordsPlayed + 1 }));
       setHint(null);
+      setNotice(null);
     } else {
       fireFeedback({ kind: "invalid", slotIndex, cardId });
+      noteCost(result);
     }
   }
 
@@ -151,7 +185,7 @@ export function MultiplayerGame({
   }
 
   async function handleUsePowerUp(id: PowerUpId) {
-    if (cooldowns[id] > 0) return;
+    if (!myTurn || cooldowns[id] > 0) return;
     const def = POWER_UP_BY_ID[id];
 
     if (id === "hint") {
@@ -159,14 +193,12 @@ export function MultiplayerGame({
       const dictionary = dictionaries[room.dictionary_id];
       const found = findHint(room.word ?? "", myHand, dictionary);
       if (!found) return;
-      setHint(found);
+      setHint({ ...found, turn: room.turn_number });
       setCooldowns((c) => ({ ...c, hint: def.cooldown }));
       sound.action();
       return;
     }
 
-    // Everything else changes shared/server-owned state, so the server
-    // applies it and the realtime subscription feeds the result back.
     const moveType = id === "chaos" ? "chaos" : id === "freeze" ? "freeze" : "purge";
     const result = await attemptMove(room.id, moveType, "n/a");
     noteRescue(result);
@@ -178,43 +210,78 @@ export function MultiplayerGame({
   }
 
   async function handleDraw() {
+    if (!myTurn) return;
     const r = await attemptMove(room.id, "draw", "n/a");
     if (r.ok) setStats((s) => ({ ...s, draws: s.draws + 1 }));
   }
 
   async function handleSwap() {
-    if (!armedCardId) return;
+    if (!armedCardId || !myTurn) return;
     const r = await attemptMove(room.id, "swap", armedCardId);
     setArmedCardId(null);
     noteRescue(r);
     if (r.ok) setStats((s) => ({ ...s, swaps: s.swaps + 1 }));
   }
 
-  const timeLeft = room.ends_at
-    ? Math.max(0, (new Date(room.ends_at).getTime() - now) / 1000)
-    : 0;
-  const elapsed = room.started_at
-    ? Math.max(0, (now - new Date(room.started_at).getTime()) / 1000)
-    : 0;
+  async function handlePass() {
+    if (!myTurn) return;
+    setArmedCardId(null);
+    await attemptMove(room.id, "pass", "n/a");
+  }
+
+  const turnStarted = room.turn_started_at ? new Date(room.turn_started_at).getTime() : null;
+  const turnAgeSec = turnStarted ? (now - turnStarted) / 1000 : 0;
+  const stalled = room.status === "playing" && !myTurn && turnAgeSec > 90;
+
+  // Clocks live on players now, so read ours out of the roster and run it
+  // down only while it's actually our turn.
+  const bankedMs = me?.time_left_ms ?? null;
+  const liveMs =
+    bankedMs === null
+      ? null
+      : myTurn && turnStarted
+        ? Math.max(0, bankedMs - (now - turnStarted))
+        : bankedMs;
 
   if (room.status === "won" || room.status === "timeout") {
+    const winner = players.find((p) => p.id === room.winner_player_id);
     return (
       <EndScreen
-        status={room.status}
+        status={room.status === "won" && room.winner_player_id !== myPlayerId ? "timeout" : room.status}
+        headline={
+          room.status === "won"
+            ? room.winner_player_id === myPlayerId
+              ? t("mp.youWon")
+              : t("mp.won", { name: winner?.name ?? "?" })
+            : t("mp.everyoneOut")
+        }
         word={room.word ?? ""}
         wordLength={(room.word_length ?? 4) as WordLength}
         dictionaryId={room.dictionary_id}
         duration={room.duration_seconds}
-        secondsLeft={timeLeft}
+        secondsLeft={liveMs === null ? 0 : liveMs / 1000}
         cardsLeft={myHand.length}
         wordsPlayed={stats.wordsPlayed}
         draws={stats.draws}
         swaps={stats.swaps}
         rescues={0}
-        // The leaderboard ranks solo runs against each other; a race
-        // against another player isn't the same measurement.
         record={false}
+        playAgainLabel={t("mp.backToLobby")}
         onPlayAgain={onLeave}
+      />
+    );
+  }
+
+  // Knocked out: the board stays live, and every hand opens up.
+  if (eliminated) {
+    return (
+      <SpectatorView
+        room={room}
+        players={players}
+        hands={visibleHands}
+        myPlayerId={myPlayerId}
+        now={now}
+        onLeave={onLeave}
       />
     );
   }
@@ -223,37 +290,53 @@ export function MultiplayerGame({
   const frozen = Object.fromEntries(
     Object.entries(room.frozen ?? {}).map(([k, v]) => [k, new Date(v).getTime()])
   );
+  const activeColor = colorForSeat(activePlayer?.seat ?? null);
 
   return (
     <div className="min-h-svh flex flex-col justify-center py-8">
-      <div className="flex flex-col gap-6 sm:gap-8">
-        <div className="max-w-3xl mx-auto px-4 flex items-center justify-center gap-3 flex-wrap font-mono">
-          {players
-            .filter((p) => p.id !== myPlayerId)
-            .map((p) => (
-              <span
-                key={p.id}
-                className="text-xs font-bold uppercase tracking-wide text-green-400 rounded-full border border-green-800 px-3 py-1"
-              >
-                {p.name}: {p.card_count} left
-              </span>
-            ))}
+      <div className="flex flex-col gap-5 sm:gap-7">
+        <PlayerRoster room={room} players={players} myPlayerId={myPlayerId} now={now} />
+
+        <div className="max-w-3xl mx-auto px-4 w-full text-center font-mono">
+          <p
+            className={`text-sm font-bold uppercase tracking-wide ${
+              myTurn ? `text-green-50 ${styles.glowPulse}` : activeColor.text
+            }`}
+          >
+            {myTurn
+              ? t("turn.yours")
+              : t("turn.waiting", { name: activePlayer?.name ?? "…" })}
+          </p>
+          {notice && (
+            <p className="mt-1 text-[11px] text-rose-400">{notice}</p>
+          )}
+          {stalled && (
+            <button
+              onClick={() => forceSkipTurn(room.id)}
+              className="mt-2 rounded-lg border border-amber-700 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-300 transition-colors hover:border-amber-400"
+              title={t("turn.stalledNote")}
+            >
+              {t("turn.skipStalled")}
+            </button>
+          )}
         </div>
 
         <Hud
           dictionaryId={room.dictionary_id}
           endless={endless}
-          timeLeft={timeLeft}
-          elapsed={elapsed}
+          timeLeft={liveMs === null ? 0 : liveMs / 1000}
+          elapsed={turnAgeSec}
           duration={room.duration_seconds}
           cardsLeft={myHand.length}
           maxHand={MAX_HAND}
           wordsPlayed={stats.wordsPlayed}
-          canSwap={!!armedCardId}
+          canSwap={!!armedCardId && myTurn}
+          disabled={!myTurn}
           muted={muted}
           onDraw={handleDraw}
           onSwap={handleSwap}
           onShuffle={() => setHandOrder(shuffle(myHand.map((c) => c.id)))}
+          onPass={handlePass}
           onToggleMute={() => setMuted(!muted)}
           onQuit={onLeave}
         />
@@ -265,25 +348,34 @@ export function MultiplayerGame({
           feedback={feedback}
           hintedSlot={hint?.slotIndex ?? null}
           hasArmedLetter={!!armedCardId}
+          lastMoveSlot={room.last_move_slot}
+          lastMoveColor={
+            colorForSeat(
+              players.find((p) => p.id === room.last_move_player_id)?.seat ?? null
+            ).hex
+          }
           onDropLetter={(cardId, slotIndex) => placeLetter(cardId, slotIndex)}
           onTapSlot={handleTapSlot}
         />
 
-        <PlayerHand
-          hand={orderedHand}
-          armedCardId={armedCardId}
-          shakingCardId={shakingCardId}
-          hintedCardId={hint?.cardId ?? null}
-          draggingCardId={draggingCardId}
-          onArm={(id) => setArmedCardId(id === "" ? null : id)}
-          onDragStart={handleDragStart}
-          onDragEnd={() => setDraggingCardId(null)}
-        />
+        <div className={myTurn ? "" : "opacity-50 pointer-events-none"}>
+          <PlayerHand
+            hand={orderedHand}
+            armedCardId={armedCardId}
+            shakingCardId={shakingCardId}
+            hintedCardId={hint?.cardId ?? null}
+            draggingCardId={draggingCardId}
+            onArm={(id) => setArmedCardId(id === "" ? null : id)}
+            onDragStart={handleDragStart}
+            onDragEnd={() => setDraggingCardId(null)}
+          />
+        </div>
 
         <PowerUpRail
           cooldowns={cooldowns}
           onUse={handleUsePowerUp}
-          unavailable={endless ? { freeze: "No timer" } : undefined}
+          disabled={!myTurn}
+          unavailable={endless ? { freeze: t("power.noTimer") } : undefined}
         />
 
         <RescueToast rescue={rescue} />

@@ -56,18 +56,14 @@ const standardSource = standardWords as unknown as WordsFile;
 const techSource = techWords as unknown as WordsFile;
 
 export const dictionaries: Record<DictionaryId, Dictionary> = {
+  // Labels are i18n keys, resolved at render time (see lib/scrabble-slam/i18n.ts).
   standard: buildDictionary(
     "standard",
-    "Standard English",
-    "Common everyday words.",
+    "dict.standard.label",
+    "dict.standard.desc",
     standardSource
   ),
-  tech: buildDictionary(
-    "tech",
-    "Tech Terminology",
-    "Programming and software words.",
-    techSource
-  ),
+  tech: buildDictionary("tech", "dict.tech.label", "dict.tech.desc", techSource),
 };
 
 export function pickRandom<T>(list: readonly T[]): T {

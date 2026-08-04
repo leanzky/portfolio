@@ -10,6 +10,10 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
   const [room, setRoom] = useState<RoomRow | null>(null);
   const [players, setPlayers] = useState<PlayerPublicRow[]>([]);
   const [myHand, setMyHand] = useState<Card[]>([]);
+  // Every hand the server is willing to show us. RLS returns just our own
+  // row while we're playing, and all of them once we've been eliminated,
+  // so spectating needs no separate endpoint.
+  const [visibleHands, setVisibleHands] = useState<PlayerRow[]>([]);
   const [ready, setReady] = useState(false);
   const tickRef = useRef<number | null>(null);
 
@@ -20,15 +24,22 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
     let cancelled = false;
 
     async function hydrate() {
-      const [{ data: roomRow }, { data: playerRows }, { data: myRow }] = await Promise.all([
+      const [{ data: roomRow }, { data: playerRows }, { data: handRows }] = await Promise.all([
         supabase!.from("rooms").select("*").eq("id", roomId).single(),
         supabase!.from("player_public").select("*").eq("room_id", roomId),
-        supabase!.from("players").select("*").eq("id", myPlayerId).single(),
+        // Not filtered to our own id: RLS decides what comes back, which is
+        // our row alone until we're eliminated and become a spectator.
+        supabase!.from("players").select("*").eq("room_id", roomId),
       ]);
       if (cancelled) return;
       if (roomRow) setRoom(roomRow as RoomRow);
       if (playerRows) setPlayers(playerRows as PlayerPublicRow[]);
-      if (myRow) setMyHand((myRow as PlayerRow).hand);
+      if (handRows) {
+        const rows = handRows as PlayerRow[];
+        setVisibleHands(rows);
+        const mine = rows.find((r) => r.id === myPlayerId);
+        if (mine) setMyHand(mine.hand);
+      }
       setReady(true);
     }
     hydrate();
@@ -65,8 +76,18 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "players", filter: `id=eq.${myPlayerId}` },
-        (payload) => setMyHand((payload.new as PlayerRow).hand)
+        { event: "UPDATE", schema: "public", table: "players", filter: `room_id=eq.${roomId}` },
+        (payload) => {
+          const next = payload.new as PlayerRow;
+          if (next.id === myPlayerId) setMyHand(next.hand);
+          // Room-wide rather than just our own row, so a spectator's view of
+          // everyone's hands keeps up. RLS still gates what actually arrives.
+          setVisibleHands((prev) =>
+            prev.some((p) => p.id === next.id)
+              ? prev.map((p) => (p.id === next.id ? next : p))
+              : [...prev, next]
+          );
+        }
       )
       .subscribe();
 
@@ -79,8 +100,8 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
 
   // Independent timeout ticker: catches the case where the clock runs out
   // with nobody making a move to trigger the check inside attempt_move.
-  // Endless rooms have no ends_at, so there's nothing to check.
-  const endless = room?.ends_at === null;
+  // Endless rooms hand out no clocks, so there's nothing to run out of.
+  const endless = room?.duration_seconds === 0;
   useEffect(() => {
     if (!roomId || room?.status !== "playing" || endless) {
       if (tickRef.current) window.clearInterval(tickRef.current);
@@ -94,5 +115,5 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
     };
   }, [roomId, room?.status, endless]);
 
-  return { room, players, myHand, ready };
+  return { room, players, myHand, visibleHands, ready };
 }

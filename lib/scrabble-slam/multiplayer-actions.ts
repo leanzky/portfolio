@@ -42,6 +42,26 @@ export async function startGame(roomId: string): Promise<RpcResult> {
   return data as RpcResult;
 }
 
+/**
+ * Actually gives up your seat. Before this existed, "leaving" only cleared
+ * local session storage, so a host who walked out was still sitting in the
+ * room when their friend joined.
+ */
+export async function leaveRoom(roomId: string): Promise<RpcResult> {
+  const supabase = requireClient();
+  const { data, error } = await supabase.rpc("leave_room", { p_room_id: roomId });
+  if (error) return { ok: false, reason: error.message };
+  return data as RpcResult;
+}
+
+/** Retires a turn nobody is taking. Only permitted once it has stalled. */
+export async function forceSkipTurn(roomId: string): Promise<RpcResult> {
+  const supabase = requireClient();
+  const { data, error } = await supabase.rpc("force_skip_turn", { p_room_id: roomId });
+  if (error) return { ok: false, reason: error.message };
+  return data as RpcResult;
+}
+
 export async function checkTimeout(roomId: string): Promise<RpcResult> {
   const supabase = requireClient();
   const { data, error } = await supabase.rpc("check_timeout", { p_room_id: roomId });

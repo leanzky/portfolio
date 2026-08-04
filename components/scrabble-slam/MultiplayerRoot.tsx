@@ -1,7 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useMultiplayerRoom } from "@/lib/scrabble-slam/useMultiplayerRoom";
+import { leaveRoom } from "@/lib/scrabble-slam/multiplayer-actions";
+import { useT } from "./LanguageToggle";
 import { MultiplayerLobby } from "./MultiplayerLobby";
 import { MultiplayerWaitingRoom } from "./MultiplayerWaitingRoom";
 import { MultiplayerGame } from "./MultiplayerGame";
@@ -55,23 +57,41 @@ function setSession(next: Session | null): void {
 }
 
 export function MultiplayerRoot({ onExit }: { onExit: () => void }) {
+  const t = useT();
   const session = useSyncExternalStore(
     subscribeSession,
     getSessionSnapshot,
     getSessionServerSnapshot
   );
 
-  const { room, players, myHand, ready } = useMultiplayerRoom(
+  const { room, players, myHand, visibleHands, ready } = useMultiplayerRoom(
     session?.roomId ?? null,
     session?.playerId ?? null
   );
+
+  // Closing the tab has to give the seat up too, or the room keeps a ghost
+  // in it exactly like the manual Leave button used to.
+  const activeRoomId = session?.roomId ?? null;
+  useEffect(() => {
+    if (!activeRoomId) return;
+    const release = () => {
+      void leaveRoom(activeRoomId);
+    };
+    window.addEventListener("pagehide", release);
+    return () => window.removeEventListener("pagehide", release);
+  }, [activeRoomId]);
 
   function handleJoined(roomId: string, playerId: string) {
     setSession({ roomId, playerId });
   }
 
+  // Actually gives the seat back. Previously this only dropped the local
+  // session, so the room still listed you and your friend saw you sitting
+  // in a room you had already walked out of.
   function handleLeave() {
+    const roomId = session?.roomId;
     setSession(null);
+    if (roomId) void leaveRoom(roomId);
   }
 
   if (!session) {
@@ -79,9 +99,9 @@ export function MultiplayerRoot({ onExit }: { onExit: () => void }) {
       <div>
         <button
           onClick={onExit}
-          className="ml-6 mt-6 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+          className="ml-6 mt-6 text-green-700 hover:text-green-400 text-sm transition-colors font-mono"
         >
-          ← Back
+          {t("nav.back")}
         </button>
         <MultiplayerLobby onJoined={handleJoined} />
       </div>
@@ -91,7 +111,7 @@ export function MultiplayerRoot({ onExit }: { onExit: () => void }) {
   if (!ready || !room) {
     return (
       <div className="min-h-svh flex items-center justify-center">
-        <p className="text-slate-400">Connecting…</p>
+        <p className="text-green-600 font-mono">{t("lobby.creating")}</p>
       </div>
     );
   }
@@ -112,6 +132,7 @@ export function MultiplayerRoot({ onExit }: { onExit: () => void }) {
       room={room}
       players={players}
       myHand={myHand}
+      visibleHands={visibleHands}
       myPlayerId={session.playerId}
       onLeave={handleLeave}
     />

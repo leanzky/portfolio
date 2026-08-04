@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { PlayerPublicRow, RoomRow } from "@/lib/scrabble-slam/multiplayer-types";
 import { startGame } from "@/lib/scrabble-slam/multiplayer-actions";
+import { useT } from "./LanguageToggle";
 
 export function MultiplayerWaitingRoom({
   room,
@@ -17,6 +18,7 @@ export function MultiplayerWaitingRoom({
 }) {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
   const me = players.find((p) => p.id === myPlayerId);
 
   async function handleStart() {
@@ -27,7 +29,7 @@ export function MultiplayerWaitingRoom({
     if (!result.ok) {
       setError(
         result.reason === "need_more_players"
-          ? "Waiting on at least one more player."
+          ? t("wait.needMore")
           : (result.reason ?? "Couldn't start the game.")
       );
     }
@@ -36,12 +38,13 @@ export function MultiplayerWaitingRoom({
   return (
     <div className="max-w-md mx-auto px-6 py-16 text-center font-mono">
       <p className="text-xs uppercase tracking-[0.3em] text-green-500">
-        Room code
+        {t("wait.roomCode")}
       </p>
       <p className="mt-2 text-5xl font-bold tracking-[0.15em] text-green-50">
         {room.code}
       </p>
-      <p className="mt-3 text-green-600">Share this code with your friend.</p>
+      <p className="mt-3 text-green-600">{t("wait.share")}</p>
+      <p className="mt-1 text-[11px] text-green-800">{t("wait.turnOrder")}</p>
 
       <div className="mt-8 space-y-2">
         {players.map((p) => (
@@ -52,19 +55,19 @@ export function MultiplayerWaitingRoom({
             <span className="font-bold text-green-50">
               {p.name}
               {p.id === myPlayerId && (
-                <span className="ml-2 text-xs text-green-700">(you)</span>
+                <span className="ml-2 text-xs text-green-700">{t("wait.you")}</span>
               )}
             </span>
             {p.is_host && (
               <span className="text-[11px] uppercase tracking-wide text-lime-300 font-bold">
-                Host
+                {t("wait.host")}
               </span>
             )}
           </div>
         ))}
         {players.length < 2 && (
           <div className="rounded-xl border border-dashed border-green-800 px-4 py-3 text-green-700 text-sm">
-            Waiting for another player to join…
+            {t("wait.waiting")}
           </div>
         )}
       </div>
@@ -75,10 +78,10 @@ export function MultiplayerWaitingRoom({
           disabled={starting || players.length < 2}
           className="mt-8 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
         >
-          {starting ? "Starting…" : "Start game"}
+          {starting ? t("wait.starting") : t("wait.start")}
         </button>
       ) : (
-        <p className="mt-8 text-green-600">Waiting for the host to start the game…</p>
+        <p className="mt-8 text-green-600">{t("wait.hostWillStart")}</p>
       )}
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
@@ -86,7 +89,7 @@ export function MultiplayerWaitingRoom({
         onClick={onLeave}
         className="mt-6 text-green-700 hover:text-green-400 text-sm transition-colors"
       >
-        ← Leave room
+        {t("wait.leave")}
       </button>
     </div>
   );

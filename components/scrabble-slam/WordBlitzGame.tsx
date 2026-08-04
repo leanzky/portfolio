@@ -18,8 +18,10 @@ import { PlayerHand } from "./PlayerHand";
 import { PowerUpRail } from "./PowerUpRail";
 import { RescueToast } from "./RescueToast";
 import { EndScreen } from "./EndScreen";
+import { useT } from "./LanguageToggle";
 
 export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
+  const t = useT();
   const [state, dispatch] = useReducer(reducer, initialState);
   const [armedCardId, setArmedCardId] = useState<string | null>(null);
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
@@ -153,7 +155,7 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
           <PowerUpRail
             cooldowns={state.cooldowns}
             onUse={handleUsePowerUp}
-            unavailable={endless ? { freeze: "No timer" } : undefined}
+            unavailable={endless ? { freeze: t("power.noTimer") } : undefined}
           />
 
           <RescueToast rescue={state.rescue} />

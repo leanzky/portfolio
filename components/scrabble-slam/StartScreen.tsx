@@ -9,20 +9,15 @@ import {
 } from "@/lib/scrabble-slam/dictionary";
 import { MAX_HAND } from "@/lib/scrabble-slam/engine";
 import { Leaderboard } from "./Leaderboard";
+import { useT } from "./LanguageToggle";
 import styles from "./game.module.css";
 
 const DURATIONS = [
-  { seconds: 120, label: "Casual", sub: "120s" },
-  { seconds: 90, label: "Standard", sub: "90s" },
-  { seconds: 60, label: "Blitz", sub: "60s" },
-  { seconds: 0, label: "Endless", sub: "No timer" },
+  { seconds: 120, key: "timer.casual", sub: "120s" },
+  { seconds: 90, key: "timer.standard", sub: "90s" },
+  { seconds: 60, key: "timer.blitz", sub: "60s" },
+  { seconds: 0, key: "timer.endless", sub: "timer.noTimer" },
 ];
-
-const LENGTH_BLURB: Record<WordLength, string> = {
-  4: "Easiest",
-  5: "Balanced",
-  6: "Hardest",
-};
 
 export function StartScreen({
   onStart,
@@ -38,25 +33,25 @@ export function StartScreen({
   const [dictionaryId, setDictionaryId] = useState<DictionaryId>("standard");
   const [wordLength, setWordLength] = useState<WordLength>(4);
   const [duration, setDuration] = useState(90);
+  const t = useT();
 
   return (
     <div className="max-w-xl mx-auto px-6 py-12 text-center font-mono">
       <p className="text-xs uppercase tracking-[0.3em] text-green-500">
-        Word Blitz
+        {t("app.kicker")}
       </p>
       <h1
         className={`mt-3 text-4xl sm:text-5xl font-bold tracking-tight text-green-50 ${styles.glowPulse}`}
       >
-        Scrabble Slam!
+        {t("app.title")}
       </h1>
       <p className="mt-4 text-green-600 leading-relaxed">
-        Change one letter of the word at a time to make a new real word.
-        Empty your hand before the clock runs out.
+        {t("start.blurb")}
       </p>
 
       <div className="mt-10 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
-          Word length
+          {t("start.wordLength")}
         </p>
         <div className="grid grid-cols-3 gap-2.5">
           {WORD_LENGTHS.map((len) => (
@@ -71,7 +66,7 @@ export function StartScreen({
             >
               <p className="font-bold text-2xl text-green-50">{len}</p>
               <p className="text-[11px] text-green-600 mt-0.5">
-                {LENGTH_BLURB[len]}
+                {t(`length.${len}`)}
               </p>
             </button>
           ))}
@@ -80,7 +75,7 @@ export function StartScreen({
 
       <div className="mt-8 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
-          Dictionary
+          {t("start.dictionary")}
         </p>
         <div className="grid grid-cols-2 gap-2.5">
           {Object.values(dictionaries).map((dict) => (
@@ -93,9 +88,9 @@ export function StartScreen({
                   : "border-green-900 hover:border-green-700"
               }`}
             >
-              <p className="font-bold text-sm text-green-50">{dict.label}</p>
+              <p className="font-bold text-sm text-green-50">{t(dict.label)}</p>
               <p className="mt-1 text-xs text-green-600 leading-snug">
-                {dict.description}
+                {t(dict.description)}
               </p>
             </button>
           ))}
@@ -104,7 +99,7 @@ export function StartScreen({
 
       <div className="mt-8 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
-          Timer
+          {t("start.timer")}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {DURATIONS.map((d) => (
@@ -117,17 +112,16 @@ export function StartScreen({
                   : "border-green-900 hover:border-green-700"
               }`}
             >
-              <p className="font-bold text-sm text-green-50">{d.label}</p>
-              <p className="text-xs text-green-600">{d.sub}</p>
+              <p className="font-bold text-sm text-green-50">{t(d.key)}</p>
+              <p className="text-xs text-green-600">
+                {d.sub.includes(".") ? t(d.sub) : d.sub}
+              </p>
             </button>
           ))}
         </div>
         {duration === 0 && (
           <p className="mt-2.5 rounded-lg border border-lime-900 bg-lime-400/5 px-3 py-2 text-[11px] leading-relaxed text-lime-200">
-            <span className="font-bold">Endless rules:</span> no clock, so the
-            only way to finish is to get down to zero cards. Every card you
-            draw makes that further away, and Freeze and Swap are off (both
-            are paid for in seconds).
+            {t("endless.rules")}
           </p>
         )}
       </div>
@@ -136,15 +130,11 @@ export function StartScreen({
         onClick={() => onStart(dictionaryId, wordLength, duration)}
         className="mt-10 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition"
       >
-        Start Round
+        {t("start.begin")}
       </button>
 
       <p className="mt-6 text-xs text-green-700 leading-relaxed">
-        Drag a card onto a letter slot, or tap the card then tap the slot.
-        Power-ups sit on the side and recharge as you make words. You can
-        shuffle your hand any time, and hold at most {MAX_HAND} cards. Run out
-        of legal moves and the hand reshuffles itself, but you take 2 extra
-        cards for it.
+        {t("start.help", { max: MAX_HAND })}
       </p>
 
       <div className="mt-10">
@@ -156,7 +146,7 @@ export function StartScreen({
           onClick={onExit}
           className="mt-6 text-green-700 hover:text-green-400 text-sm transition-colors"
         >
-          ← Back to game modes
+          {t("nav.backModes")}
         </button>
       )}
     </div>

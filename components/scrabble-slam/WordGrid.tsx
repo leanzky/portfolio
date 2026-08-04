@@ -10,6 +10,8 @@ export function WordGrid({
   feedback,
   hintedSlot,
   hasArmedLetter,
+  lastMoveSlot,
+  lastMoveColor,
   onDropLetter,
   onTapSlot,
 }: {
@@ -21,6 +23,10 @@ export function WordGrid({
   /** Slot highlighted by the Hint power-up. */
   hintedSlot?: number | null;
   hasArmedLetter: boolean;
+  /** Slot changed by the most recent play (multiplayer). */
+  lastMoveSlot?: number | null;
+  /** Hex colour of whoever played it, so you can see who moved where. */
+  lastMoveColor?: string;
   onDropLetter: (cardId: string, slotIndex: number) => void;
   onTapSlot: (slotIndex: number) => void;
 }) {
@@ -32,12 +38,24 @@ export function WordGrid({
         const isFrozen = (frozen?.[i] ?? 0) > now;
         const glow = feedback?.kind === "valid" && feedback.slotIndex === i;
         const shake = feedback?.kind === "invalid" && feedback.slotIndex === i;
+        // Stands down while you're placing a card, so the lime "droppable"
+        // borders aren't competing with a player colour for the same edge.
+        const justPlayed = lastMoveSlot === i && !!lastMoveColor && !hasArmedLetter;
 
         return (
           <div
             key={i}
             data-testid="grid-slot"
             data-slot-index={i}
+            data-last-move={justPlayed ? "true" : undefined}
+            style={
+              justPlayed
+                ? {
+                    borderColor: lastMoveColor,
+                    boxShadow: `0 0 18px -4px ${lastMoveColor}`,
+                  }
+                : undefined
+            }
             onDragOver={(e) => {
               if (!isFrozen) e.preventDefault();
             }}

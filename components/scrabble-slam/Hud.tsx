@@ -2,6 +2,7 @@
 
 import { dictionaries, DictionaryId } from "@/lib/scrabble-slam/dictionary";
 import { MAX_HAND } from "@/lib/scrabble-slam/engine";
+import { useT } from "./LanguageToggle";
 import styles from "./game.module.css";
 
 function formatElapsed(seconds: number): string {
@@ -20,10 +21,12 @@ export function Hud({
   maxHand,
   wordsPlayed,
   canSwap,
+  disabled = false,
   muted,
   onDraw,
   onSwap,
   onShuffle,
+  onPass,
   onToggleMute,
   onQuit,
 }: {
@@ -33,21 +36,28 @@ export function Hud({
   elapsed: number;
   duration: number;
   cardsLeft: number;
-  /** Hand ceiling. Omitted means uncapped (multiplayer, where the server
-      owns the hand and enforces no limit). */
+  /** Hand ceiling. Omitted means uncapped. */
   maxHand?: number;
   wordsPlayed: number;
   canSwap: boolean;
+  /** True when it isn't your turn: actions are visible but inert. */
+  disabled?: boolean;
   muted: boolean;
   onDraw: () => void;
   onSwap: () => void;
   onShuffle?: () => void;
+  /** Multiplayer only: hand the turn on without playing. */
+  onPass?: () => void;
   onToggleMute: () => void;
   onQuit: () => void;
 }) {
+  const t = useT();
   const urgent = !endless && timeLeft <= 10;
   const pct = endless ? 1 : Math.max(0, Math.min(1, timeLeft / duration));
   const handFull = maxHand !== undefined && cardsLeft >= maxHand;
+
+  const btn =
+    "rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed";
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 font-mono">
@@ -56,16 +66,16 @@ export function Hud({
           onClick={onQuit}
           className="text-green-700 hover:text-green-300 transition-colors"
         >
-          ← Quit
+          {t("hud.quit")}
         </button>
         <span className="uppercase tracking-widest text-green-600 text-xs">
-          {dictionaries[dictionaryId].label}
-          {endless && <span className="text-lime-400"> · Endless</span>}
+          {t(dictionaries[dictionaryId].label)}
+          {endless && <span className="text-lime-400"> · {t("timer.endless")}</span>}
         </span>
         <button
           onClick={onToggleMute}
           className="text-green-700 hover:text-green-300 transition-colors"
-          aria-label={muted ? "Unmute sound" : "Mute sound"}
+          aria-label={muted ? t("hud.unmute") : t("hud.mute")}
         >
           {muted ? "🔇" : "🔊"}
         </button>
@@ -75,7 +85,7 @@ export function Hud({
         {endless ? (
           <div
             className="font-bold text-2xl tabular-nums text-green-50"
-            title="No timer in Endless — this is how long you've been playing"
+            title={t("hud.elapsedHelp")}
           >
             {formatElapsed(elapsed)}
           </div>
@@ -89,68 +99,65 @@ export function Hud({
           </div>
         )}
 
-        {endless ? (
-          // No clock to drain, so the bar shows progress toward the real
-          // win condition instead: emptying the hand.
-          <div className="flex-1 h-2 rounded-full bg-green-950 overflow-hidden">
+        <div className="flex-1 h-2 rounded-full bg-green-950 overflow-hidden">
+          {endless ? (
+            // No clock to drain, so the bar shows progress toward the real
+            // win condition instead: emptying the hand.
             <div
               className="h-full rounded-full bg-lime-400 transition-[width] duration-200 ease-linear"
               style={{
                 width: `${Math.max(0, 1 - cardsLeft / (maxHand ?? MAX_HAND)) * 100}%`,
               }}
             />
-          </div>
-        ) : (
-          <div className="flex-1 h-2 rounded-full bg-green-950 overflow-hidden">
+          ) : (
             <div
               className={`h-full rounded-full transition-[width] duration-200 ease-linear ${
                 urgent ? "bg-rose-500" : "bg-green-400"
               }`}
               style={{ width: `${pct * 100}%` }}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="font-bold text-lg text-lime-300 whitespace-nowrap">
-          {cardsLeft} left
+          {t("hud.left", { n: cardsLeft })}
         </div>
       </div>
 
       <div className="mt-2 text-center text-[11px] uppercase tracking-wide text-green-800">
-        {wordsPlayed} word{wordsPlayed === 1 ? "" : "s"} played
+        {wordsPlayed === 1
+          ? t("hud.wordPlayed", { n: wordsPlayed })
+          : t("hud.wordsPlayed", { n: wordsPlayed })}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2.5">
         {onShuffle && (
-          <button
-            onClick={onShuffle}
-            className="rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors"
-            title="Reorder your hand. Same cards, free, as often as you like."
-          >
-            ⇄ Shuffle
+          <button onClick={onShuffle} className={btn} title={t("hud.shuffleHelp")}>
+            {t("hud.shuffle")}
           </button>
         )}
         <button
           onClick={onDraw}
-          disabled={handFull}
-          className="rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          title={
-            handFull
-              ? `Your hand is full at ${maxHand} cards`
-              : "Draw a fresh letter card. Grows your hand by 1, and you win by emptying it."
-          }
+          disabled={handFull || disabled}
+          className={btn}
+          title={handFull ? t("hud.handFull", { max: maxHand ?? "" }) : t("hud.drawHelp")}
         >
-          Draw card
+          {t("hud.draw")}
           {maxHand !== undefined && ` ${cardsLeft}/${maxHand}`}
         </button>
         {!endless && (
           <button
             onClick={onSwap}
-            disabled={!canSwap}
-            className="rounded-lg border border-green-800 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-400 hover:border-green-500 hover:text-green-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Select a card first, then swap it for a new one (costs 3 seconds)"
+            disabled={!canSwap || disabled}
+            className={btn}
+            title={t("hud.swapHelp")}
           >
-            Swap selected (−3s)
+            {t("hud.swap")}
+          </button>
+        )}
+        {onPass && (
+          <button onClick={onPass} disabled={disabled} className={btn}>
+            {t("turn.pass")}
           </button>
         )}
       </div>

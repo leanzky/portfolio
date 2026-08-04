@@ -176,11 +176,25 @@ Six-letter rounds are winnable but can run to hundreds of plays, so they're real
 
 Two things worth knowing if you change the word list: roughly **30% of 6-letter words are dead ends** (no single-letter change makes another word) versus 2% at four letters, so `pickStarterWord` re-draws until it finds a live one. Mid-round dead ends can't happen — any word you reached can always be changed back the way you came — but `resolveStuck` still deals a fresh board word if it ever meets one, and doesn't charge the 2 cards for it, since no hand could have played it.
 
+### Multiplayer is turn-based
+
+Players act in seat order (seats follow join order), and **each player owns a clock that only runs on their own turn** — everyone else's is genuinely paused, not just dimmed. The roster above the board shows everyone in a stable per-seat colour, and the active player's card lights up in theirs. The slot of the most recent play is outlined in the mover's colour, so you can see who changed what.
+
+| Situation | Timed | Endless |
+| --- | --- | --- |
+| Wrong guess | −5s off your clock, turn continues | turn passes immediately |
+| Clock hits zero | eliminated → spectator | can't happen, there's no clock |
+| Winning | first to empty their hand, or last player standing | first to empty their hand |
+
+**Eliminated players become spectators** and can see every hand face up. That's enforced by RLS, not the UI: `is_spectator()` is a `SECURITY DEFINER` check used by a policy on `players`, so an active player querying the table directly still gets only their own row back. Worth testing under a non-superuser role if you ever change it — superusers bypass RLS entirely, which makes a naive test pass for the wrong reason.
+
+Two safety valves are worth knowing about. `leave_room` removes your seat outright while the room is still waiting, and counts as elimination once play has started (deleting a seat mid-game would renumber the turn order under everyone else). It's also wired to `pagehide`, so closing the tab gives the seat back. And because Endless has no clock to knock out an absent player, any player can retire a turn that has sat untouched for 90 seconds.
+
 ### Multiplayer setup
 
 1. Create a Supabase project.
 2. In **Authentication → Sign In / Providers**, enable **Anonymous sign-ins** (players get a seat with no login screen).
-3. In the **SQL Editor**, run the migrations in `supabase/migrations/` in filename order (`0001…` through `0007…`).
+3. In the **SQL Editor**, run the migrations in `supabase/migrations/` in filename order (`0001…` through `0008…`).
 4. Add these env vars (locally in `.env.local`, and in your host's project settings for production — see Deploying below):
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -207,6 +221,12 @@ Multiplayer reads the same words from the `words` table, so `0004_expand_diction
 ### Known issue: realtime push is unreliable, polling covers it
 
 Supabase's realtime push (`postgres_changes`) sometimes doesn't deliver updates from one player's browser to another's, for a reason not yet root-caused — verified to *not* be the database, RLS, the publication setup, or Chromium/Playwright itself (raw `supabase-js` calls work fine from both Node and a real browser tab outside this app). As a reliability net, `lib/scrabble-slam/useMultiplayerRoom.ts` also polls the room/players/hand every 1.5s regardless of whether push delivery worked, so the game stays fully correct and playable — opponents' moves just take up to ~1.5s to visibly land instead of arriving instantly. If you want to chase the root cause further, that hook is where to start; the two symptoms to watch for are (a) the channel reports `SUBSCRIBED` status successfully, yet (b) events from another browser context never fire the `.on('postgres_changes', ...)` callback.
+
+### Languages
+
+The game ships English and Chinese, toggled from the corner of every game screen and remembered in `localStorage`. Strings live in one file, [`lib/scrabble-slam/i18n.ts`](lib/scrabble-slam/i18n.ts) — add a language by adding a dictionary there and an entry to `LANGUAGES`; any key you miss falls back to English rather than showing a raw key.
+
+This translates the interface, not the puzzle. The game is built on changing one Latin letter of an English word, so the board, the cards and the dictionary stay English in every language. A Chinese speaker gets Chinese menus, rules and messages around an English word game. The rest of the portfolio is not translated — this is scoped to `/scrabble-slam`.
 
 ## Meal Calendar (the page at /calendar)
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { RescueNotice } from "@/lib/scrabble-slam/reducer";
+import { useT } from "./LanguageToggle";
 import styles from "./game.module.css";
 
 /**
@@ -9,12 +10,15 @@ import styles from "./game.module.css";
  * replays from the top without a timer or any state to clean up.
  */
 export function RescueToast({ rescue }: { rescue: RescueNotice | null }) {
+  const t = useT();
   if (!rescue) return null;
 
   const gained =
-    rescue.added > 0
-      ? `+${rescue.added} card${rescue.added === 1 ? "" : "s"}`
-      : "hand full, letters rerolled";
+    rescue.added > 1
+      ? t("rescue.gainedCards", { n: rescue.added })
+      : rescue.added === 1
+        ? t("rescue.gainedCard")
+        : t("rescue.gainedReroll");
 
   return (
     <div
@@ -24,18 +28,18 @@ export function RescueToast({ rescue }: { rescue: RescueNotice | null }) {
     >
       <div className="rounded-xl border-2 border-amber-400 bg-[#1a1405] px-4 py-2.5 text-center font-mono shadow-[0_8px_28px_rgba(0,0,0,0.6)]">
         <p className="text-xs font-bold uppercase tracking-wide text-amber-300">
-          {rescue.newWord ? "Dead-end word" : "No moves left"}
+          {rescue.newWord ? t("rescue.deadEnd") : t("rescue.noMoves")}
         </p>
         <p className="mt-0.5 text-[11px] leading-snug text-amber-200/80">
           {rescue.newWord ? (
             <>
-              Nothing plays off it, so here&apos;s a new one ·{" "}
+              {t("rescue.newWord")}{" "}
               <span className="font-bold uppercase tracking-widest text-amber-100">
                 {rescue.newWord}
               </span>
             </>
           ) : (
-            <>Hand reshuffled · {gained}</>
+            <>{t("rescue.reshuffled", { gained })}</>
           )}
         </p>
       </div>

@@ -2,6 +2,7 @@
 
 import type { Card } from "@/lib/scrabble-slam/engine";
 import { CardTile } from "./CardTile";
+import { useT } from "./LanguageToggle";
 
 export function PlayerHand({
   hand,
@@ -22,10 +23,13 @@ export function PlayerHand({
   onDragStart: (card: Card, e: React.DragEvent) => void;
   onDragEnd: () => void;
 }) {
+  const t = useT();
   return (
     <div className="w-full font-mono">
       <p className="mb-2 text-center text-[11px] uppercase tracking-[0.2em] text-green-700">
-        Your hand · {hand.length} card{hand.length === 1 ? "" : "s"}
+        {hand.length === 1
+          ? t("hand.titleOne")
+          : t("hand.title", { n: hand.length })}
       </p>
       {/* Deliberately not a scroll container: the tray already wraps, and
           overflow-x-auto would clip tooltips while letting absolute children
