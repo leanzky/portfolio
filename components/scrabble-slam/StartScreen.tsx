@@ -7,12 +7,15 @@ import {
   WORD_LENGTHS,
   WordLength,
 } from "@/lib/scrabble-slam/dictionary";
+import { MAX_HAND } from "@/lib/scrabble-slam/engine";
+import { Leaderboard } from "./Leaderboard";
 import styles from "./game.module.css";
 
 const DURATIONS = [
   { seconds: 120, label: "Casual", sub: "120s" },
   { seconds: 90, label: "Standard", sub: "90s" },
   { seconds: 60, label: "Blitz", sub: "60s" },
+  { seconds: 0, label: "Endless", sub: "No timer" },
 ];
 
 const LENGTH_BLURB: Record<WordLength, string> = {
@@ -103,7 +106,7 @@ export function StartScreen({
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
           Timer
         </p>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {DURATIONS.map((d) => (
             <button
               key={d.seconds}
@@ -119,6 +122,14 @@ export function StartScreen({
             </button>
           ))}
         </div>
+        {duration === 0 && (
+          <p className="mt-2.5 rounded-lg border border-lime-900 bg-lime-400/5 px-3 py-2 text-[11px] leading-relaxed text-lime-200">
+            <span className="font-bold">Endless rules:</span> no clock, so the
+            only way to finish is to get down to zero cards. Every card you
+            draw makes that further away, and Freeze and Swap are off (both
+            are paid for in seconds).
+          </p>
+        )}
       </div>
 
       <button
@@ -130,8 +141,15 @@ export function StartScreen({
 
       <p className="mt-6 text-xs text-green-700 leading-relaxed">
         Drag a card onto a letter slot, or tap the card then tap the slot.
-        Power-ups sit on the side and recharge as you make words.
+        Power-ups sit on the side and recharge as you make words. You can
+        shuffle your hand any time, and hold at most {MAX_HAND} cards. Run out
+        of legal moves and the hand reshuffles itself, but you take 2 extra
+        cards for it.
       </p>
+
+      <div className="mt-10">
+        <Leaderboard showClear />
+      </div>
 
       {onExit && (
         <button

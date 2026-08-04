@@ -1,25 +1,86 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
+import type { DictionaryId, WordLength } from "@/lib/scrabble-slam/dictionary";
+import { recordRun } from "@/lib/scrabble-slam/leaderboard";
 import type { GameStatus } from "@/lib/scrabble-slam/reducer";
+import { computeScore } from "@/lib/scrabble-slam/scoring";
+import { Leaderboard } from "./Leaderboard";
 import styles from "./game.module.css";
 
 export function EndScreen({
   status,
   word,
+  wordLength,
+  dictionaryId,
+  duration,
+  secondsLeft,
   cardsLeft,
+  wordsPlayed,
   draws,
   swaps,
+  rescues,
+  record = true,
   onPlayAgain,
 }: {
   status: GameStatus;
   word: string;
+  wordLength: WordLength;
+  dictionaryId: DictionaryId;
+  /** 0 means Endless. */
+  duration: number;
+  secondsLeft: number;
   cardsLeft: number;
+  wordsPlayed: number;
   draws: number;
   swaps: number;
+  rescues: number;
+  /** The leaderboard is solo-only, so multiplayer shows a score but
+      doesn't save it. */
+  record?: boolean;
   onPlayAgain: () => void;
 }) {
   const won = status === "won";
+  const score = computeScore({
+    won,
+    wordsPlayed,
+    wordLength,
+    secondsLeft,
+    duration,
+    draws,
+    rescues,
+  });
+
+  // Save the run exactly once. The ref survives StrictMode's double-invoke,
+  // and the board re-renders off the store rather than off local state.
+  const recorded = useRef(false);
+  useEffect(() => {
+    if (!record || recorded.current) return;
+    recorded.current = true;
+    recordRun({
+      score: score.total,
+      won,
+      wordsPlayed,
+      wordLength,
+      dictionaryId,
+      duration,
+      finalWord: word,
+    });
+  }, [record, score.total, won, wordsPlayed, wordLength, dictionaryId, duration, word]);
+
+  const stats = [
+    { value: wordsPlayed, label: "Words" },
+    { value: cardsLeft, label: "Cards left" },
+    { value: draws, label: "Draws" },
+    { value: rescues, label: "Rescues" },
+  ];
+  // Only when it happened, so the grid stays a tidy 4 the rest of the time.
+  if (swaps > 0) stats.push({ value: swaps, label: "Swaps" });
+
+  const penaltyLabel = [draws > 0 && "draws", rescues > 0 && "rescues"]
+    .filter(Boolean)
+    .join(" & ");
 
   return (
     <div className="max-w-md mx-auto px-6 py-16 text-center font-mono">
@@ -33,37 +94,49 @@ export function EndScreen({
       >
         {won ? "You win!" : "Out of time"}
       </h1>
-      <p className="mt-4 text-green-600">
+
+      <div className="mt-6 rounded-2xl border-2 border-green-400 bg-green-400/5 py-5">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-green-600">
+          Score
+        </p>
+        <p className="mt-1 text-5xl font-bold tabular-nums text-green-50">
+          {score.total.toLocaleString()}
+        </p>
+        <p className="mt-2 px-4 text-[11px] leading-snug text-green-700">
+          {score.words.toLocaleString()} from words
+          {score.winBonus > 0 && ` · +${score.winBonus} for clearing`}
+          {score.timeBonus > 0 && ` · +${score.timeBonus} time left`}
+          {score.penalties > 0 && ` · −${score.penalties} ${penaltyLabel}`}
+        </p>
+      </div>
+
+      <p className="mt-5 text-green-600">
         Final word:{" "}
         <span className="font-bold text-green-50 uppercase tracking-widest">
           {word}
         </span>
       </p>
 
-      <div className="mt-8 grid grid-cols-3 gap-2.5 text-center">
-        <div className="rounded-xl border border-green-800 py-3">
-          <p className="font-bold text-2xl text-green-50">{cardsLeft}</p>
-          <p className="text-[11px] uppercase tracking-wide text-green-700 mt-1">
-            Cards left
-          </p>
-        </div>
-        <div className="rounded-xl border border-green-800 py-3">
-          <p className="font-bold text-2xl text-green-50">{draws}</p>
-          <p className="text-[11px] uppercase tracking-wide text-green-700 mt-1">
-            Draws
-          </p>
-        </div>
-        <div className="rounded-xl border border-green-800 py-3">
-          <p className="font-bold text-2xl text-green-50">{swaps}</p>
-          <p className="text-[11px] uppercase tracking-wide text-green-700 mt-1">
-            Swaps
-          </p>
-        </div>
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+        {stats.map((stat) => (
+          <div key={stat.label} className="rounded-xl border border-green-800 py-3">
+            <p className="font-bold text-2xl text-green-50">{stat.value}</p>
+            <p className="text-[11px] uppercase tracking-wide text-green-700 mt-1">
+              {stat.label}
+            </p>
+          </div>
+        ))}
       </div>
+
+      {record && (
+        <div className="mt-10">
+          <Leaderboard highlightLastRun />
+        </div>
+      )}
 
       <button
         onClick={onPlayAgain}
-        className="mt-10 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition"
+        className="mt-8 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition"
       >
         Play again
       </button>

@@ -236,3 +236,23 @@
     animation: none;
   }
 }
+
+@keyframes toastInOut {
+  0% { opacity: 0; transform: translateY(-12px); }
+  8% { opacity: 1; transform: translateY(0); }
+  75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Ends at opacity 0 and holds there (forwards), so the notice dismisses
+   itself with no timer to schedule or tear down. */
+.toast {
+  animation: toastInOut 3.4s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation-duration: 3.4s;
+    animation-timing-function: steps(1, end);
+  }
+}

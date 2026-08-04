@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Card } from "@/lib/scrabble-slam/engine";
-import { findHint } from "@/lib/scrabble-slam/engine";
-import { dictionaries } from "@/lib/scrabble-slam/dictionary";
+import { findHint, shuffle } from "@/lib/scrabble-slam/engine";
+import { dictionaries, type WordLength } from "@/lib/scrabble-slam/dictionary";
 import type { PlayerPublicRow, RoomRow } from "@/lib/scrabble-slam/multiplayer-types";
 import { attemptMove } from "@/lib/scrabble-slam/multiplayer-actions";
 import {
@@ -65,9 +65,22 @@ export function MultiplayerGame({
   const [cooldowns, setCooldowns] = useState<Cooldowns>(initialCooldowns());
   const [hint, setHint] = useState<{ slotIndex: number; cardId: string } | null>(null);
   const now = useNow(100);
-  const [stats, setStats] = useState({ draws: 0, swaps: 0 });
+  const [stats, setStats] = useState({ draws: 0, swaps: 0, wordsPlayed: 0 });
+  // Display order only. The server owns which cards you hold; this just
+  // reorders them locally, and cards it hasn't seen fall to the end.
+  const [handOrder, setHandOrder] = useState<string[]>([]);
   const muted = useSyncExternalStore(subscribeMuted, getMutedSnapshot, getMutedServerSnapshot);
   const lastStatus = useRef(room.status);
+
+  const orderedHand = useMemo(() => {
+    if (handOrder.length === 0) return myHand;
+    const rank = new Map(handOrder.map((id, i) => [id, i]));
+    return [...myHand].sort(
+      (a, b) =>
+        (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }, [myHand, handOrder]);
 
   useEffect(() => {
     if (room.status !== lastStatus.current) {
@@ -93,6 +106,7 @@ export function MultiplayerGame({
       fireFeedback({ kind: "valid", slotIndex });
       // Making a word is what recharges abilities, same rule as solo.
       setCooldowns((c) => tickCooldowns(c));
+      setStats((s) => ({ ...s, wordsPlayed: s.wordsPlayed + 1 }));
       setHint(null);
     } else {
       fireFeedback({ kind: "invalid", slotIndex, cardId });
@@ -149,22 +163,32 @@ export function MultiplayerGame({
     if (r.ok) setStats((s) => ({ ...s, swaps: s.swaps + 1 }));
   }
 
+  const timeLeft = room.ends_at
+    ? Math.max(0, (new Date(room.ends_at).getTime() - now) / 1000)
+    : 0;
+
   if (room.status === "won" || room.status === "timeout") {
     return (
       <EndScreen
         status={room.status}
         word={room.word ?? ""}
+        wordLength={(room.word_length ?? 4) as WordLength}
+        dictionaryId={room.dictionary_id}
+        duration={room.duration_seconds}
+        secondsLeft={timeLeft}
         cardsLeft={myHand.length}
+        wordsPlayed={stats.wordsPlayed}
         draws={stats.draws}
         swaps={stats.swaps}
+        rescues={0}
+        // The leaderboard ranks solo runs against each other; a race
+        // against another player isn't the same measurement.
+        record={false}
         onPlayAgain={onLeave}
       />
     );
   }
 
-  const timeLeft = room.ends_at
-    ? Math.max(0, (new Date(room.ends_at).getTime() - now) / 1000)
-    : 0;
   const shakingCardId = feedback?.kind === "invalid" ? feedback.cardId : null;
   const frozen = Object.fromEntries(
     Object.entries(room.frozen ?? {}).map(([k, v]) => [k, new Date(v).getTime()])
@@ -188,13 +212,17 @@ export function MultiplayerGame({
 
         <Hud
           dictionaryId={room.dictionary_id}
+          endless={false}
           timeLeft={timeLeft}
+          elapsed={0}
           duration={room.duration_seconds}
           cardsLeft={myHand.length}
+          wordsPlayed={stats.wordsPlayed}
           canSwap={!!armedCardId}
           muted={muted}
           onDraw={handleDraw}
           onSwap={handleSwap}
+          onShuffle={() => setHandOrder(shuffle(myHand.map((c) => c.id)))}
           onToggleMute={() => setMuted(!muted)}
           onQuit={onLeave}
         />
@@ -211,7 +239,7 @@ export function MultiplayerGame({
         />
 
         <PlayerHand
-          hand={myHand}
+          hand={orderedHand}
           armedCardId={armedCardId}
           shakingCardId={shakingCardId}
           hintedCardId={hint?.cardId ?? null}

@@ -13,10 +13,14 @@ export function PowerUpRail({
   cooldowns,
   onUse,
   disabled = false,
+  unavailable,
 }: {
   cooldowns: Cooldowns;
   onUse: (id: PowerUpId) => void;
   disabled?: boolean;
+  /** Power-ups that make no sense in the current mode, with the reason
+      shown in place of the cooldown (e.g. Freeze in Endless). */
+  unavailable?: Partial<Record<PowerUpId, string>>;
 }) {
   return (
     <div
@@ -34,8 +38,12 @@ export function PowerUpRail({
       </p>
 
       {POWER_UPS.map((p) => {
+        const blockedReason = unavailable?.[p.id];
         const remaining = cooldowns[p.id];
-        const ready = remaining === 0 && !disabled;
+        const ready = remaining === 0 && !disabled && !blockedReason;
+        const status = blockedReason
+          ? blockedReason
+          : `${remaining} word${remaining === 1 ? "" : "s"} left`;
 
         return (
           <div key={p.id} className="group relative">
@@ -44,7 +52,7 @@ export function PowerUpRail({
               onClick={() => onUse(p.id)}
               disabled={!ready}
               aria-label={`${p.label}. ${p.help}${
-                ready ? "" : ` Recharging: ${remaining} more word${remaining === 1 ? "" : "s"}.`
+                ready ? "" : ` Unavailable: ${status}.`
               }`}
               className={[
                 "w-full rounded-xl border-2 px-3 py-2 text-left transition",
@@ -60,7 +68,7 @@ export function PowerUpRail({
                   {p.label}
                 </span>
                 <span className="block text-[10px] leading-tight mt-0.5 opacity-80 truncate">
-                  {ready ? p.short : `${remaining} word${remaining === 1 ? "" : "s"} left`}
+                  {ready ? p.short : status}
                 </span>
               </span>
             </button>

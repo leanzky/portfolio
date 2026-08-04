@@ -88,6 +88,11 @@ export const sound = {
     setTimeout(() => beep(880, 0.16, "triangle"), 140);
   },
   action: () => beep(340, 0.15, "square"),
+  // Descending: the game bailing you out isn't a reward.
+  rescue: () => {
+    beep(440, 0.12, "triangle");
+    setTimeout(() => beep(330, 0.16, "triangle"), 90);
+  },
   win: () => {
     [523, 659, 784, 1047].forEach((f, i) =>
       setTimeout(() => beep(f, 0.2, "sine"), i * 90)

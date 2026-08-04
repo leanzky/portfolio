@@ -138,7 +138,14 @@ A word game linked from the Selected Work section. Solo mode needs nothing extra
 
 ### How it plays
 
-Pick a word length (4, 5 or 6), a dictionary and a timer, then change one letter of the board word at a time to make new real words, emptying your 16-card hand before the clock runs out. Words never change length.
+Pick a word length (4, 5 or 6), a dictionary and a timer, then change one letter of the board word at a time to make new real words, emptying your 12-card hand. Words never change length.
+
+- **You can hold at most 15 cards.** Drawing is capped there, and since you win by reaching zero, every draw moves you further from winning.
+- **Shuffle** reorders your hand any time, free. It's a "look at these letters differently" button, nothing more.
+- **Endless** (the fourth timer option) removes the clock entirely. Emptying your hand becomes the *only* way to finish, so there's no surviving on the timer. Freeze and Swap are hidden there since both are paid for in seconds.
+- **If you have no legal move at all**, the game notices and rescues you automatically: your hand is redrawn and you take **2 extra cards** for it. Redrawn, not just reordered — reordering wouldn't change anything, and dead letters would pile up until every turn needed a rescue.
+
+**Scoring and the leaderboard.** Each finished round scores on words played (multiplied by word length), plus a clearing bonus and leftover time, minus draws and rescues. The top 10 runs are kept in `localStorage` and shown on the start and end screens. Deliberately per-device rather than server-backed: no account, no migration, and an anonymous global board on a portfolio site is mostly a spam target. To move it to Supabase later, replace `load` and `recordRun` in [`lib/scrabble-slam/leaderboard.ts`](lib/scrabble-slam/leaderboard.ts) — components read through the store, not storage.
 
 **Power-ups** live on a rail beside the board (a strip underneath on narrow screens) rather than taking up hand slots. Each runs on a cooldown measured in *words played*, so the way to earn abilities back is to keep making words:
 
@@ -146,10 +153,26 @@ Pick a word length (4, 5 or 6), a dictionary and a timer, then change one letter
 | --- | --- | --- |
 | **Hint** | Highlights a slot and the card that fits it | 2 words |
 | **Chaos** | Rerolls 4 cards in your hand (size unchanged) | 3 words |
-| **Freeze** | Puts 8 seconds back on the clock | 4 words |
+| **Freeze** | Puts 8 seconds back on the clock (off in Endless) | 4 words |
 | **Purge** | Discards 2 cards outright | 5 words |
 
 Definitions live in [`lib/scrabble-slam/powerups.ts`](lib/scrabble-slam/powerups.ts) — cooldowns and copy are all editable there, and the rail renders whatever it finds.
+
+### Tuning the difficulty
+
+Three constants in [`lib/scrabble-slam/engine.ts`](lib/scrabble-slam/engine.ts): `HAND_SIZE` (12, the opening hand), `MAX_HAND` (15, the ceiling) and `RESCUE_CARDS` (2, the no-moves penalty). Scoring weights are in [`lib/scrabble-slam/scoring.ts`](lib/scrabble-slam/scoring.ts).
+
+`RESCUE_CARDS` is the sensitive one. A rescue gives you 2 cards while a play removes 1, so if you get stuck on more than half your turns the hand stops shrinking and the round can't end. Simulated over 25 rounds per length:
+
+| Length | Turns with no legal move | Verdict |
+| --- | --- | --- |
+| 4 | 16–24% | comfortable |
+| 5 | 30–36% | fair |
+| 6 | 38–39% | genuinely hard, and long |
+
+Six-letter rounds are winnable but can run to hundreds of plays, so they're realistically an Endless mode rather than something to clear in 90 seconds. Dropping `RESCUE_CARDS` to 1 makes length 6 much faster if you'd rather it were gentler.
+
+Two things worth knowing if you change the word list: roughly **30% of 6-letter words are dead ends** (no single-letter change makes another word) versus 2% at four letters, so `pickStarterWord` re-draws until it finds a live one. Mid-round dead ends can't happen — any word you reached can always be changed back the way you came — but `resolveStuck` still deals a fresh board word if it ever meets one, and doesn't charge the 2 cards for it, since no hand could have played it.
 
 ### Multiplayer setup
 

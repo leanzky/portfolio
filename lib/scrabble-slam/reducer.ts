@@ -5,7 +5,11 @@ import {
   findHint,
   HAND_SIZE,
   makeLetterCard,
+  MAX_HAND,
   pickStarterWord,
+  rerollCards,
+  resolveStuck,
+  shuffle,
   tryPlaceLetter,
 } from "./engine";
 import {
@@ -26,6 +30,17 @@ export type Feedback =
 
 export type Hint = { slotIndex: number; cardId: string } | null;
 
+/** Announcement for an automatic no-moves bailout. Kept separate from
+    `feedback` so a rescue triggered by a valid play doesn't clobber the
+    play's own "valid" flash. */
+export type RescueNotice = {
+  id: number;
+  added: number;
+  rerolled: number;
+  /** Set when the board word was a dead end and got replaced. */
+  newWord: string | null;
+};
+
 export type GameState = {
   status: GameStatus;
   dictionaryId: DictionaryId;
@@ -35,12 +50,18 @@ export type GameState = {
   cooldowns: Cooldowns;
   hint: Hint;
   now: number;
+  /** Infinity in Endless mode — nothing can ever reach it. */
   endAt: number;
+  startedAt: number;
+  /** Seconds. 0 means Endless: no timer, and emptying your hand is the
+      only way to finish. */
   duration: number;
   wordsPlayed: number;
   draws: number;
   swaps: number;
+  rescues: number;
   feedback: Feedback | null;
+  rescue: RescueNotice | null;
 };
 
 export type GameAction =
@@ -55,6 +76,7 @@ export type GameAction =
   | { type: "USE_POWER_UP"; powerUp: PowerUpId }
   | { type: "DRAW_CARD" }
   | { type: "SWAP_CARD"; cardId: string }
+  | { type: "SHUFFLE_HAND" }
   | { type: "RESET" };
 
 let feedbackId = 0;
@@ -73,20 +95,49 @@ export const initialState: GameState = {
   hint: null,
   now: 0,
   endAt: 0,
+  startedAt: 0,
   duration: 90,
   wordsPlayed: 0,
   draws: 0,
   swaps: 0,
+  rescues: 0,
   feedback: null,
+  rescue: null,
 };
 
-function shuffleIndexes(count: number, take: number): Set<number> {
-  const idx = Array.from({ length: count }, (_, i) => i);
-  for (let i = idx.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [idx[i], idx[j]] = [idx[j], idx[i]];
-  }
-  return new Set(idx.slice(0, take));
+export function isEndless(state: GameState): boolean {
+  return state.duration === 0;
+}
+
+/**
+ * Runs after anything that changes the word or the hand. If the player has
+ * no legal move left, the hand is reshuffled and grown by 2 (see
+ * `resolveStuck`) and a notice is raised so the UI can explain what
+ * happened. A no-op when a move exists or the round is already over.
+ */
+function withStuckRescue(state: GameState): GameState {
+  if (state.status !== "playing") return state;
+
+  const rescue = resolveStuck(
+    state.word,
+    state.hand,
+    dictionaries[state.dictionaryId]
+  );
+  if (!rescue) return state;
+
+  return {
+    ...state,
+    hand: rescue.hand,
+    word: rescue.word ?? state.word,
+    hint: null,
+    rescues: state.rescues + 1,
+    rescue: {
+      id: nextFeedbackId(),
+      added: rescue.added,
+      rerolled: rescue.rerolled,
+      newWord: rescue.word,
+    },
+  };
 }
 
 export function reducer(state: GameState, action: GameAction): GameState {
@@ -95,7 +146,9 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const dictionary = dictionaries[action.dictionaryId];
       const word = pickStarterWord(dictionary, action.wordLength);
       const now = Date.now();
-      return {
+      const endless = action.duration === 0;
+      // A dead opening hand is possible, so the rescue check runs here too.
+      return withStuckRescue({
         ...initialState,
         status: "playing",
         dictionaryId: action.dictionaryId,
@@ -104,9 +157,12 @@ export function reducer(state: GameState, action: GameAction): GameState {
         hand: dealHand(HAND_SIZE),
         cooldowns: initialCooldowns(),
         now,
-        endAt: now + action.duration * 1000,
+        startedAt: now,
+        endAt: endless
+          ? Number.POSITIVE_INFINITY
+          : now + action.duration * 1000,
         duration: action.duration,
-      };
+      });
     }
 
     case "TICK": {
@@ -143,7 +199,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
       }
 
       const nextHand = state.hand.filter((c) => c.id !== card.id);
-      return {
+      return withStuckRescue({
         ...state,
         word: result.nextWord,
         hand: nextHand,
@@ -157,7 +213,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
           kind: "valid",
           slotIndex: action.slotIndex,
         },
-      };
+      });
     }
 
     case "USE_POWER_UP": {
@@ -165,17 +221,20 @@ export function reducer(state: GameState, action: GameAction): GameState {
       const def = POWER_UP_BY_ID[action.powerUp];
       if (!def) return state;
 
+      const blocked = (): GameState => ({
+        ...state,
+        feedback: {
+          id: nextFeedbackId(),
+          kind: "blocked",
+          powerUp: action.powerUp,
+        },
+      });
+
+      // There is no clock to put seconds back on in Endless.
+      if (action.powerUp === "freeze" && isEndless(state)) return blocked();
+
       // Still cooling down: reject with feedback instead of silently no-oping.
-      if (state.cooldowns[action.powerUp] > 0) {
-        return {
-          ...state,
-          feedback: {
-            id: nextFeedbackId(),
-            kind: "blocked",
-            powerUp: action.powerUp,
-          },
-        };
-      }
+      if (state.cooldowns[action.powerUp] > 0) return blocked();
 
       const spend = (next: Partial<GameState>): GameState => ({
         ...state,
@@ -193,37 +252,31 @@ export function reducer(state: GameState, action: GameAction): GameState {
           const dictionary = dictionaries[state.dictionaryId];
           const hint = findHint(state.word, state.hand, dictionary);
           // No legal move exists — don't burn the cooldown on nothing.
-          if (!hint) {
-            return {
-              ...state,
-              feedback: {
-                id: nextFeedbackId(),
-                kind: "blocked",
-                powerUp: "hint",
-              },
-            };
-          }
+          // (The rescue below hands the player a way out instead.)
+          if (!hint) return withStuckRescue(blocked());
           return spend({ hint });
         }
 
-        case "chaos": {
-          const replace = shuffleIndexes(state.hand.length, Math.min(4, state.hand.length));
-          return spend({
-            hand: state.hand.map((c, i) => (replace.has(i) ? makeLetterCard() : c)),
-            hint: null,
-          });
-        }
+        case "chaos":
+          return withStuckRescue(
+            spend({
+              hand: rerollCards(state.hand, Math.min(4, state.hand.length)),
+              hint: null,
+            })
+          );
 
         case "freeze":
           return spend({ endAt: state.endAt + 8000 });
 
         case "purge": {
           const nextHand = state.hand.slice(0, Math.max(0, state.hand.length - 2));
-          return spend({
-            hand: nextHand,
-            hint: null,
-            status: nextHand.length === 0 ? "won" : state.status,
-          });
+          return withStuckRescue(
+            spend({
+              hand: nextHand,
+              hint: null,
+              status: nextHand.length === 0 ? "won" : state.status,
+            })
+          );
         }
 
         default:
@@ -233,6 +286,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
 
     case "DRAW_CARD": {
       if (state.status !== "playing") return state;
+      // The hand is capped, so drawing can't be used to stall forever.
+      if (state.hand.length >= MAX_HAND) return state;
       return {
         ...state,
         hand: [...state.hand, makeLetterCard()],
@@ -242,6 +297,8 @@ export function reducer(state: GameState, action: GameAction): GameState {
 
     case "SWAP_CARD": {
       if (state.status !== "playing") return state;
+      // Swapping is paid for in seconds, so Endless has no price for it.
+      if (isEndless(state)) return state;
       const card = state.hand.find((c) => c.id === action.cardId);
       if (!card) return state;
 
@@ -249,13 +306,19 @@ export function reducer(state: GameState, action: GameAction): GameState {
         .filter((c) => c.id !== card.id)
         .concat(makeLetterCard());
 
-      return {
+      return withStuckRescue({
         ...state,
         hand: nextHand,
         hint: null,
         swaps: state.swaps + 1,
         endAt: Math.max(state.now + 50, state.endAt - 3000),
-      };
+      });
+    }
+
+    case "SHUFFLE_HAND": {
+      if (state.status !== "playing") return state;
+      // Purely a reordering: same cards, fresh look at them.
+      return { ...state, hand: shuffle(state.hand), hint: null };
     }
 
     case "RESET":

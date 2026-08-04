@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useReducer, useRef, useState, useSyncExternalStore } from "react";
-import type { Card } from "@/lib/scrabble-slam/engine";
-import { initialState, reducer } from "@/lib/scrabble-slam/reducer";
+import { MAX_HAND, type Card } from "@/lib/scrabble-slam/engine";
+import { initialState, isEndless, reducer } from "@/lib/scrabble-slam/reducer";
 import type { PowerUpId } from "@/lib/scrabble-slam/powerups";
 import {
   getMutedServerSnapshot,
@@ -16,6 +16,7 @@ import { Hud } from "./Hud";
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
 import { PowerUpRail } from "./PowerUpRail";
+import { RescueToast } from "./RescueToast";
 import { EndScreen } from "./EndScreen";
 
 export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
@@ -28,6 +29,7 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
     getMutedServerSnapshot
   );
   const lastFeedbackId = useRef<number | null>(null);
+  const lastRescueId = useRef<number | null>(null);
   const lastStatus = useRef(state.status);
 
   // Drive the countdown; ~10 updates/sec keeps the timer bar smooth
@@ -55,6 +57,13 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
   }, [state.feedback]);
 
   useEffect(() => {
+    if (state.rescue && state.rescue.id !== lastRescueId.current) {
+      lastRescueId.current = state.rescue.id;
+      sound.rescue();
+    }
+  }, [state.rescue]);
+
+  useEffect(() => {
     if (state.status !== lastStatus.current) {
       lastStatus.current = state.status;
       if (state.status === "won") sound.win();
@@ -78,7 +87,9 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
     dispatch({ type: "USE_POWER_UP", powerUp });
   }
 
-  const timeLeft = Math.max(0, (state.endAt - state.now) / 1000);
+  const endless = isEndless(state);
+  const timeLeft = endless ? 0 : Math.max(0, (state.endAt - state.now) / 1000);
+  const elapsed = Math.max(0, (state.now - state.startedAt) / 1000);
   const shakingCardId =
     state.feedback?.kind === "invalid" ? state.feedback.cardId : null;
 
@@ -97,9 +108,13 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
         <div className="flex flex-col gap-8 sm:gap-10">
           <Hud
             dictionaryId={state.dictionaryId}
+            endless={endless}
             timeLeft={timeLeft}
+            elapsed={elapsed}
             duration={state.duration}
             cardsLeft={state.hand.length}
+            maxHand={MAX_HAND}
+            wordsPlayed={state.wordsPlayed}
             canSwap={!!armedCardId}
             muted={muted}
             onDraw={() => dispatch({ type: "DRAW_CARD" })}
@@ -107,6 +122,7 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
               if (armedCardId) dispatch({ type: "SWAP_CARD", cardId: armedCardId });
               setArmedCardId(null);
             }}
+            onShuffle={() => dispatch({ type: "SHUFFLE_HAND" })}
             onToggleMute={() => setMuted(!muted)}
             onQuit={() => dispatch({ type: "RESET" })}
           />
@@ -134,7 +150,13 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
             onDragEnd={() => setDraggingCardId(null)}
           />
 
-          <PowerUpRail cooldowns={state.cooldowns} onUse={handleUsePowerUp} />
+          <PowerUpRail
+            cooldowns={state.cooldowns}
+            onUse={handleUsePowerUp}
+            unavailable={endless ? { freeze: "No timer" } : undefined}
+          />
+
+          <RescueToast rescue={state.rescue} />
         </div>
       )}
 
@@ -142,9 +164,15 @@ export function WordBlitzGame({ onExit }: { onExit?: () => void } = {}) {
         <EndScreen
           status={state.status}
           word={state.word}
+          wordLength={state.wordLength}
+          dictionaryId={state.dictionaryId}
+          duration={state.duration}
+          secondsLeft={timeLeft}
           cardsLeft={state.hand.length}
+          wordsPlayed={state.wordsPlayed}
           draws={state.draws}
           swaps={state.swaps}
+          rescues={state.rescues}
           onPlayAgain={() => dispatch({ type: "RESET" })}
         />
       )}
