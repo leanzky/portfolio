@@ -3,6 +3,12 @@
 import type { Card } from "@/lib/scrabble-slam/engine";
 import styles from "./game.module.css";
 
+/** Han glyphs are square and dense: they need no uppercasing, a different
+    font stack, and slightly smaller type to sit inside the same tile. */
+function isHan(ch: string): boolean {
+  return /[\u3400-\u9fff]/.test(ch);
+}
+
 export function CardTile({
   card,
   armed,
@@ -37,8 +43,8 @@ export function CardTile({
       onClick={onArm}
       disabled={disabled}
       aria-pressed={armed}
-      aria-label={`Letter ${card.letter.toUpperCase()}`}
-      title={`Letter ${card.letter.toUpperCase()} — drag onto a slot, or tap this then tap a slot`}
+      aria-label={card.letter.toUpperCase()}
+      title={card.letter.toUpperCase()}
       style={dealDelayMs !== undefined ? { animationDelay: `${dealDelayMs}ms` } : undefined}
       className={[
         "relative shrink-0 select-none rounded-xl border-2 font-mono font-bold",
@@ -52,7 +58,13 @@ export function CardTile({
         dealDelayMs !== undefined ? styles.dealIn : "",
       ].join(" ")}
     >
-      <span className="text-2xl sm:text-3xl leading-none uppercase">
+      <span
+        className={
+          isHan(card.letter)
+            ? `text-[1.75rem] sm:text-3xl leading-none ${styles.han}`
+            : "text-2xl sm:text-3xl leading-none uppercase"
+        }
+      >
         {card.letter}
       </span>
     </button>

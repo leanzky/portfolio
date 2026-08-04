@@ -1,10 +1,10 @@
 import { dictionaries, DictionaryId, WordLength } from "./dictionary";
 import {
   Card,
-  dealHand,
+  dealPlayableHand,
   findHint,
   HAND_SIZE,
-  makeLetterCard,
+  drawCard,
   MAX_HAND,
   pickStarterWord,
   rerollCards,
@@ -154,7 +154,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
         dictionaryId: action.dictionaryId,
         word,
         wordLength: action.wordLength,
-        hand: dealHand(HAND_SIZE),
+        hand: dealPlayableHand(dictionary, word, HAND_SIZE),
         cooldowns: initialCooldowns(),
         now,
         startedAt: now,
@@ -260,7 +260,11 @@ export function reducer(state: GameState, action: GameAction): GameState {
         case "chaos":
           return withStuckRescue(
             spend({
-              hand: rerollCards(state.hand, Math.min(4, state.hand.length)),
+              hand: rerollCards(
+                state.hand,
+                Math.min(4, state.hand.length),
+                dictionaries[state.dictionaryId]
+              ),
               hint: null,
             })
           );
@@ -290,7 +294,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
       if (state.hand.length >= MAX_HAND) return state;
       return {
         ...state,
-        hand: [...state.hand, makeLetterCard()],
+        hand: [...state.hand, drawCard(dictionaries[state.dictionaryId])],
         draws: state.draws + 1,
       };
     }
@@ -304,7 +308,7 @@ export function reducer(state: GameState, action: GameAction): GameState {
 
       const nextHand = state.hand
         .filter((c) => c.id !== card.id)
-        .concat(makeLetterCard());
+        .concat(drawCard(dictionaries[state.dictionaryId]));
 
       return withStuckRescue({
         ...state,

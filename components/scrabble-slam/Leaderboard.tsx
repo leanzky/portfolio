@@ -8,6 +8,7 @@ import {
   subscribe,
   type LeaderboardEntry,
 } from "@/lib/scrabble-slam/leaderboard";
+import { dictionaries } from "@/lib/scrabble-slam/dictionary";
 import { useT } from "./LanguageToggle";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -34,10 +35,15 @@ export function Leaderboard({
   const [confirming, setConfirming] = useState(false);
 
   const formatMode = (e: LeaderboardEntry) =>
-    t("board.mode", {
-      len: e.wordLength,
-      timer: e.duration > 0 ? `${e.duration}s` : t("timer.endless"),
-    });
+    t(
+      dictionaries[e.dictionaryId]?.script === "han"
+        ? "board.modeHan"
+        : "board.mode",
+      {
+        len: e.wordLength,
+        timer: e.duration > 0 ? `${e.duration}s` : t("timer.endless"),
+      }
+    );
 
   return (
     <div className="font-mono text-left">

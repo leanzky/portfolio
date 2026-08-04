@@ -140,6 +140,7 @@ const en: Dict = {
   "board.cleared": "Cleared",
   "board.timedOut": "Timed out",
   "board.mode": "{len} letters · {timer}",
+  "board.modeHan": "{len} characters · {timer}",
 
   // Lobby
   "lobby.kicker": "Multiplayer",
@@ -211,6 +212,12 @@ const en: Dict = {
   "dict.standard.desc": "Common everyday words.",
   "dict.tech.label": "Tech Terminology",
   "dict.tech.desc": "Programming and software words.",
+  "dict.chinese.label": "中文 Chinese",
+  "dict.chinese.desc": "Two-character words. Swap one character.",
+  "start.hanRules":
+    "Chinese plays as two-character words 词: swap one character 字 to make another real word. 国家 → 大家 → 作家 → 专家. Cards are single characters, drawn from a fixed set of 250.",
+  "start.helpHan":
+    "Drag a character onto a slot, or tap the card then tap the slot. Power-ups sit on the side and recharge as you make words. You can shuffle your hand any time, and hold at most {max} cards. Run out of legal moves and the hand is redrawn, but you take 2 extra cards for it.",
 
   // Language
   "lang.label": "Language",
@@ -328,6 +335,7 @@ const zh: Dict = {
   "board.cleared": "已清空",
   "board.timedOut": "超时",
   "board.mode": "{len} 字母 · {timer}",
+  "board.modeHan": "双字词 · {timer}",
 
   "lobby.kicker": "多人游戏",
   "lobby.title": "与朋友对战",
@@ -393,6 +401,12 @@ const zh: Dict = {
   "dict.standard.desc": "日常常用单词。",
   "dict.tech.label": "科技术语",
   "dict.tech.desc": "编程与软件相关单词。",
+  "dict.chinese.label": "中文",
+  "dict.chinese.desc": "双字词，每次换一个字。",
+  "start.hanRules":
+    "中文模式玩的是双字词：每次换掉其中一个字，拼出另一个真实的词。国家 → 大家 → 作家 → 专家。卡牌是单个汉字，从固定的 250 字表中抽取。",
+  "start.helpHan":
+    "把汉字卡拖到字格上，或先点卡牌再点字格。强化技能在侧边栏，每拼出一个词就会冷却一格。手牌随时可以重排，最多持有 {max} 张。若无子可走，手牌会重抽，但你要额外拿 2 张牌。",
 
   "lang.label": "语言",
 };

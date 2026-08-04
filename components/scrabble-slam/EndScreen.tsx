@@ -53,6 +53,7 @@ export function EndScreen({
     won,
     wordsPlayed,
     wordLength,
+    dictionaryId,
     secondsLeft,
     duration,
     draws,

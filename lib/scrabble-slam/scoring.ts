@@ -1,4 +1,5 @@
-import type { WordLength } from "./dictionary";
+import { dictionaries, type DictionaryId, type Script, type WordLength }
+  from "./dictionary";
 
 /**
  * One number to rank runs by. The shape of it is the game telling you what
@@ -6,16 +7,27 @@ import type { WordLength } from "./dictionary";
  * draws or bailouts.
  */
 
-export const LENGTH_MULTIPLIER: Record<WordLength, number> = {
-  4: 1,
-  5: 1.3,
-  6: 1.6,
-};
+const LATIN_MULTIPLIER: Record<number, number> = { 4: 1, 5: 1.3, 6: 1.6 };
+
+/**
+ * How much a word is worth for its shape. Looked up rather than indexed
+ * straight into a table, because a table keyed 4/5/6 silently yields
+ * undefined for a two-character Chinese board and scores the whole run NaN.
+ */
+export function lengthMultiplier(script: Script, wordLength: WordLength): number {
+  if (script === "han") {
+    // Two slots, but 250 possible tiles per slot against Latin's 26, so a
+    // Han board asks more of you than its length suggests.
+    return 1.5;
+  }
+  return LATIN_MULTIPLIER[wordLength] ?? 1;
+}
 
 export type ScoreInput = {
   won: boolean;
   wordsPlayed: number;
   wordLength: WordLength;
+  dictionaryId: DictionaryId;
   /** Seconds left on the clock. Ignored when untimed. */
   secondsLeft: number;
   /** 0 means Endless (no timer). */
@@ -34,7 +46,10 @@ export type ScoreBreakdown = {
 
 export function computeScore(input: ScoreInput): ScoreBreakdown {
   const timed = input.duration > 0;
-  const multiplier = LENGTH_MULTIPLIER[input.wordLength];
+  const multiplier = lengthMultiplier(
+    dictionaries[input.dictionaryId]?.script ?? "latin",
+    input.wordLength
+  );
 
   const words = Math.round(input.wordsPlayed * 100 * multiplier);
 

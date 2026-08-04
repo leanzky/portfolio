@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   dictionaries,
   DictionaryId,
-  WORD_LENGTHS,
   WordLength,
 } from "@/lib/scrabble-slam/dictionary";
 import { MAX_HAND } from "@/lib/scrabble-slam/engine";
@@ -35,6 +34,13 @@ export function StartScreen({
   const [duration, setDuration] = useState(90);
   const t = useT();
 
+  const dictionary = dictionaries[dictionaryId];
+  const lengths = dictionary.lengths;
+  // Chinese plays at one length only, so the picker would be a single dead
+  // button. The chosen length has to follow the dictionary either way, or
+  // switching to Chinese would try to start a 4-character round.
+  const activeLength = lengths.includes(wordLength) ? wordLength : lengths[0];
+
   return (
     <div className="max-w-xl mx-auto px-6 py-12 text-center font-mono">
       <p className="text-xs uppercase tracking-[0.3em] text-green-500">
@@ -51,33 +57,9 @@ export function StartScreen({
 
       <div className="mt-10 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
-          {t("start.wordLength")}
-        </p>
-        <div className="grid grid-cols-3 gap-2.5">
-          {WORD_LENGTHS.map((len) => (
-            <button
-              key={len}
-              onClick={() => setWordLength(len)}
-              className={`rounded-xl border-2 py-4 transition-colors ${
-                wordLength === len
-                  ? "border-green-400 bg-green-400/10"
-                  : "border-green-900 hover:border-green-700"
-              }`}
-            >
-              <p className="font-bold text-2xl text-green-50">{len}</p>
-              <p className="text-[11px] text-green-600 mt-0.5">
-                {t(`length.${len}`)}
-              </p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-8 text-left">
-        <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
           {t("start.dictionary")}
         </p>
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-3 gap-2.5">
           {Object.values(dictionaries).map((dict) => (
             <button
               key={dict.id}
@@ -96,6 +78,36 @@ export function StartScreen({
           ))}
         </div>
       </div>
+
+      {lengths.length > 1 ? (
+        <div className="mt-8 text-left">
+          <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
+            {t("start.wordLength")}
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {lengths.map((len) => (
+              <button
+                key={len}
+                onClick={() => setWordLength(len)}
+                className={`rounded-xl border-2 py-4 transition-colors ${
+                  activeLength === len
+                    ? "border-green-400 bg-green-400/10"
+                    : "border-green-900 hover:border-green-700"
+                }`}
+              >
+                <p className="font-bold text-2xl text-green-50">{len}</p>
+                <p className="text-[11px] text-green-600 mt-0.5">
+                  {t(`length.${len}`)}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 rounded-lg border border-green-900 bg-green-400/5 px-3 py-2 text-left text-[11px] leading-relaxed text-green-500">
+          {t("start.hanRules")}
+        </p>
+      )}
 
       <div className="mt-8 text-left">
         <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2.5">
@@ -127,14 +139,16 @@ export function StartScreen({
       </div>
 
       <button
-        onClick={() => onStart(dictionaryId, wordLength, duration)}
+        onClick={() => onStart(dictionaryId, activeLength, duration)}
         className="mt-10 w-full rounded-xl bg-green-400 text-black font-bold text-lg py-4 hover:brightness-110 hover:shadow-[0_0_24px_rgba(74,222,128,0.5)] transition"
       >
         {t("start.begin")}
       </button>
 
       <p className="mt-6 text-xs text-green-700 leading-relaxed">
-        {t("start.help", { max: MAX_HAND })}
+        {dictionary.script === "han"
+          ? t("start.helpHan", { max: MAX_HAND })
+          : t("start.help", { max: MAX_HAND })}
       </p>
 
       <div className="mt-10">

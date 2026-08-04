@@ -1,4 +1,4 @@
-import { Dictionary, pickRandom, WordLength } from "./dictionary";
+import { Dictionary, dictionaries, pickRandom } from "./dictionary";
 
 /* ---------- Card model ----------
    Hands are letters only. Abilities live on the power-up rail with their
@@ -12,22 +12,15 @@ export type LetterCard = {
 
 export type Card = LetterCard;
 
-/* ---------- Letter frequency (approximates Scrabble tile distribution,
-   so common letters like vowels come up often enough to find a play) ---------- */
+/* ---------- Tiles ----------
+   Which tiles exist is the dictionary's business, not the engine's. Latin
+   play draws from 26 letters on a Scrabble-like distribution; Chinese from
+   a closed inventory of 250 characters weighted by how often each is used. */
 
-const LETTER_FREQUENCIES: [string, number][] = [
-  ["e", 12], ["a", 9], ["i", 9], ["o", 8], ["n", 6], ["r", 6], ["t", 6],
-  ["l", 4], ["s", 4], ["u", 4], ["d", 4], ["g", 3], ["b", 2], ["c", 2],
-  ["m", 2], ["p", 2], ["f", 2], ["h", 2], ["v", 2], ["w", 2], ["y", 2],
-  ["k", 1], ["j", 1], ["q", 1], ["x", 1], ["z", 1],
-];
+const DEFAULT_DICTIONARY = dictionaries.standard;
 
-const LETTER_POOL: string[] = LETTER_FREQUENCIES.flatMap(([letter, count]) =>
-  Array(count).fill(letter)
-);
-
-export function randomLetter(): string {
-  return pickRandom(LETTER_POOL);
+export function randomLetter(dictionary: Dictionary = DEFAULT_DICTIONARY): string {
+  return pickRandom(dictionary.pool);
 }
 
 let cardIdCounter = 0;
@@ -40,6 +33,11 @@ export function makeLetterCard(letter: string = randomLetter()): LetterCard {
   return { id: nextCardId("l"), kind: "letter", letter };
 }
 
+/** A fresh tile drawn from a specific dictionary's pool. */
+export function drawCard(dictionary: Dictionary): LetterCard {
+  return makeLetterCard(randomLetter(dictionary));
+}
+
 /* ---------- Dealing a starting hand ---------- */
 
 export const HAND_SIZE = 12;
@@ -48,17 +46,41 @@ export const HAND_SIZE = 12;
     stuck-rescue bonus, both stop here rather than growing the hand forever. */
 export const MAX_HAND = 15;
 
-/** Cards added when a no-moves rescue fires. The difficulty dial: at 2 the
-    hand shrinks steadily at 4 and 5 letters and slowly at 6. */
+/** Fallback rescue cost for dictionaries that don't state one. The real
+    dial is `Dictionary.rescueCards`, which varies by script. */
 export const RESCUE_CARDS = 2;
 
-export function dealHand(handSize: number = HAND_SIZE): Card[] {
-  // Guarantee a playable-feeling hand: at least a third of it is vowels.
-  const vowels = ["a", "e", "i", "o", "u"];
-  const minVowels = Math.ceil(handSize / 3);
+/**
+ * Deals a hand that can actually do something. A purely random opening hand
+ * has no legal move 4% of the time in English and 16% in Chinese (two slots
+ * instead of four), and opening a round on an instant rescue reads as a bug.
+ */
+export function dealPlayableHand(
+  dictionary: Dictionary,
+  word: string,
+  handSize: number = HAND_SIZE
+): Card[] {
+  let hand = dealHand(dictionary, handSize);
+  for (let attempt = 0; attempt < 25 && !hasMove(word, hand, dictionary); attempt++) {
+    hand = dealHand(dictionary, handSize);
+  }
+  return hand;
+}
+
+export function dealHand(
+  dictionary: Dictionary = DEFAULT_DICTIONARY,
+  handSize: number = HAND_SIZE
+): Card[] {
   const letters: string[] = [];
-  for (let i = 0; i < minVowels; i++) letters.push(pickRandom(vowels));
-  while (letters.length < handSize) letters.push(randomLetter());
+  if (dictionary.script === "latin") {
+    // Guarantee a playable-feeling hand: at least a third of it is vowels.
+    // Han has no equivalent distinction - its weighted pool already biases
+    // toward the characters that combine into the most words.
+    const vowels = ["a", "e", "i", "o", "u"];
+    const minVowels = Math.ceil(handSize / 3);
+    for (let i = 0; i < minVowels; i++) letters.push(pickRandom(vowels));
+  }
+  while (letters.length < handSize) letters.push(randomLetter(dictionary));
   return shuffle(letters.map((l) => makeLetterCard(l)));
 }
 
@@ -81,17 +103,21 @@ function randomIndexes(count: number, take: number): Set<number> {
   return new Set(idx.slice(0, Math.min(take, count)));
 }
 
-/** Replaces `count` random cards with fresh letters. Hand size is unchanged. */
-export function rerollCards(hand: Card[], count: number): Card[] {
+/** Replaces `count` random cards with fresh tiles. Hand size is unchanged. */
+export function rerollCards(
+  hand: Card[],
+  count: number,
+  dictionary: Dictionary = DEFAULT_DICTIONARY
+): Card[] {
   const replace = randomIndexes(hand.length, count);
-  return hand.map((c, i) => (replace.has(i) ? makeLetterCard() : c));
+  return hand.map((c, i) => (replace.has(i) ? drawCard(dictionary) : c));
 }
 
 /* ---------- Starter word ---------- */
 
 export function pickStarterWord(
   dictionary: Dictionary,
-  length: WordLength,
+  length: number,
   exclude?: string
 ): string {
   // Prefer the curated everyday-word pool so a round never opens on
@@ -116,15 +142,16 @@ export function pickStarterWord(
 /** True when SOME letter in some slot makes a different valid word — i.e.
     the board can be advanced at all, regardless of what's in hand. */
 export function hasSuccessor(word: string, dictionary: Dictionary): boolean {
-  for (let slot = 0; slot < word.length; slot++) {
-    for (const letter of ALPHABET) {
+  const slots = Array.from(word).length;
+  for (let slot = 0; slot < slots; slot++) {
+    // The dictionary's own alphabet rather than a hardcoded a-z: for Chinese
+    // that is the 250-character inventory.
+    for (const letter of dictionary.alphabet) {
       if (tryPlaceLetter(word, slot, letter, dictionary).ok) return true;
     }
   }
   return false;
 }
-
-const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 
 /* ---------- Play validation ---------- */
 
@@ -142,8 +169,17 @@ export function tryPlaceLetter(
 ): PlayResult {
   if (frozenSlots.has(slotIndex)) return { ok: false, reason: "frozen" };
 
-  const nextWord =
-    word.slice(0, slotIndex) + letter.toLowerCase() + word.slice(slotIndex + 1);
+  // Index by codepoint, not UTF-16 code unit: a tile is one character in
+  // either script, and Array.from splits on codepoints.
+  const tiles = Array.from(word);
+  if (slotIndex < 0 || slotIndex >= tiles.length) {
+    return { ok: false, reason: "not-a-word" };
+  }
+  // Only Latin has a case to normalise; Han characters pass through as-is.
+  const replacement = /[A-Za-z]/.test(letter) ? letter.toLowerCase() : letter;
+  const nextWord = tiles
+    .map((t, i) => (i === slotIndex ? replacement : t))
+    .join("");
 
   if (nextWord === word) return { ok: false, reason: "same-word" };
   if (!dictionary.trie.has(nextWord)) return { ok: false, reason: "not-a-word" };
@@ -161,7 +197,8 @@ export function findHint(
   dictionary: Dictionary
 ): { slotIndex: number; cardId: string } | null {
   const options: { slotIndex: number; cardId: string }[] = [];
-  for (let slot = 0; slot < word.length; slot++) {
+  const slots = Array.from(word).length;
+  for (let slot = 0; slot < slots; slot++) {
     for (const card of hand) {
       const result = tryPlaceLetter(word, slot, card.letter, dictionary);
       if (result.ok) options.push({ slotIndex: slot, cardId: card.id });
@@ -176,7 +213,8 @@ export function hasMove(
   hand: Card[],
   dictionary: Dictionary
 ): boolean {
-  for (let slot = 0; slot < word.length; slot++) {
+  const slots = Array.from(word).length;
+  for (let slot = 0; slot < slots; slot++) {
     for (const card of hand) {
       if (tryPlaceLetter(word, slot, card.letter, dictionary).ok) return true;
     }
@@ -220,7 +258,7 @@ export function resolveStuck(
 
   const freshWord = hasSuccessor(word, dictionary)
     ? null
-    : pickStarterWord(dictionary, word.length as WordLength, word);
+    : pickStarterWord(dictionary, Array.from(word).length, word);
   const target = freshWord ?? word;
 
   // The 2-card price is for not holding the right letters. When the board
@@ -228,21 +266,24 @@ export function resolveStuck(
   // for that would be punishing the player for the game's dealing.
   const grow = freshWord
     ? 0
-    : Math.min(RESCUE_CARDS, Math.max(0, MAX_HAND - hand.length));
+    : Math.min(
+        dictionary.rescueCards ?? RESCUE_CARDS,
+        Math.max(0, MAX_HAND - hand.length)
+      );
 
   // The whole hand is redrawn, not just reordered. Reordering would be
   // cosmetic — the cards that couldn't play still couldn't play — and the
   // dead letters would pile up until every turn needed a rescue. Redrawing
   // is what makes the 2-card price a real trade instead of a tax.
   let next = [
-    ...hand.map(() => makeLetterCard()),
-    ...Array.from({ length: grow }, () => makeLetterCard()),
+    ...hand.map(() => drawCard(dictionary)),
+    ...Array.from({ length: grow }, () => drawCard(dictionary)),
   ];
   let rerolled = hand.length;
 
   // Bounded so a pathological dictionary can never hang the reducer.
   for (let attempt = 0; attempt < 60 && !hasMove(target, next, dictionary); attempt++) {
-    next = rerollCards(next, 2);
+    next = rerollCards(next, 2, dictionary);
     rerolled += 2;
   }
 

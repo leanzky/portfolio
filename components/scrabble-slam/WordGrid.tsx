@@ -30,7 +30,12 @@ export function WordGrid({
   onDropLetter: (cardId: string, slotIndex: number) => void;
   onTapSlot: (slotIndex: number) => void;
 }) {
-  const letters = word.toUpperCase().split("");
+  // Split by codepoint so a Han character counts as one slot, and skip
+  // uppercasing for scripts that have no case.
+  const letters = Array.from(word).map((c) =>
+    /[a-z]/i.test(c) ? c.toUpperCase() : c
+  );
+  const han = letters.some((c) => /[\u3400-\u9fff]/.test(c));
 
   return (
     <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap font-mono">
@@ -69,7 +74,8 @@ export function WordGrid({
             }}
             className={[
               "relative flex items-center justify-center rounded-2xl border-2",
-              "w-14 h-16 sm:w-20 sm:h-24 font-bold text-3xl sm:text-5xl",
+              "w-14 h-16 sm:w-20 sm:h-24 font-bold",
+              han ? `text-3xl sm:text-4xl ${styles.han}` : "text-3xl sm:text-5xl",
               "bg-[#08140a] text-green-50 transition-colors",
               isFrozen
                 ? "border-emerald-400 cursor-not-allowed"

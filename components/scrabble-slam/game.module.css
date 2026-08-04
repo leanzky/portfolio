@@ -256,3 +256,13 @@
     animation-timing-function: steps(1, end);
   }
 }
+
+/* CJK glyphs are square and have no case. The mono stack the rest of the
+   game uses has no Han coverage, so it would silently fall back to whatever
+   the OS picks and land at a different optical size than the Latin tiles. */
+.han {
+  font-family: "Noto Sans SC", "Source Han Sans SC", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}

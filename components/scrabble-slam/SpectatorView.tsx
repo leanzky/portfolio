@@ -106,7 +106,9 @@ export function SpectatorView({
                         key={c.id}
                         className="flex h-8 w-7 items-center justify-center rounded-md border border-green-800 bg-[#08140a] text-sm font-bold text-green-100"
                       >
-                        {c.letter.toUpperCase()}
+                        {/[a-z]/i.test(c.letter)
+                          ? c.letter.toUpperCase()
+                          : c.letter}
                       </span>
                     ))
                   )}

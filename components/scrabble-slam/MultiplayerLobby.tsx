@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import {
-  dictionaries,
   DictionaryId,
+  multiplayerDictionaries,
   WORD_LENGTHS,
   WordLength,
 } from "@/lib/scrabble-slam/dictionary";
@@ -159,7 +159,7 @@ export function MultiplayerLobby({
               {t("start.dictionary")}
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {Object.values(dictionaries).map((dict) => (
+              {multiplayerDictionaries.map((dict) => (
                 <button
                   key={dict.id}
                   onClick={() => setDictionaryId(dict.id)}

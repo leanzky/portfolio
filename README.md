@@ -222,11 +222,31 @@ Multiplayer reads the same words from the `words` table, so `0004_expand_diction
 
 Supabase's realtime push (`postgres_changes`) sometimes doesn't deliver updates from one player's browser to another's, for a reason not yet root-caused — verified to *not* be the database, RLS, the publication setup, or Chromium/Playwright itself (raw `supabase-js` calls work fine from both Node and a real browser tab outside this app). As a reliability net, `lib/scrabble-slam/useMultiplayerRoom.ts` also polls the room/players/hand every 1.5s regardless of whether push delivery worked, so the game stays fully correct and playable — opponents' moves just take up to ~1.5s to visibly land instead of arriving instantly. If you want to chase the root cause further, that hook is where to start; the two symptoms to watch for are (a) the channel reports `SUBSCRIBED` status successfully, yet (b) events from another browser context never fire the `.on('postgres_changes', ...)` callback.
 
+### Chinese mode (solo)
+
+There is a real Chinese version of the game, not just a translated menu. The board is a two-character word 词 and you swap one character 字 to make another: **国家 → 大家 → 作家 → 专家**. Every other rule is unchanged — same hand, same power-ups, same rescue.
+
+It's **solo only**, because the multiplayer server validates moves against a Postgres `words` table that holds no Han entries.
+
+The word list is built the same way as the English one, blending a real lexicon with real usage:
+
+- **CC-CEDICT** — a human-edited Chinese dictionary, so every entry is a genuine word (the role ENABLE plays for English)
+- **jieba word frequencies** — so entries are actually used, with a floor applied to drop the long tail
+- Personal names, place names and abbreviations are stripped
+
+The result is 3,587 two-character words, every one of which has at least one legal successor.
+
+**The character inventory is deliberately closed at 250.** That's the load-bearing decision. Latin play is closed at 26 letters, so any card you hold is likely to fit somewhere. Chinese has thousands of characters, and drawing from all of them was measured at a **44% chance** that a 12-card hand held any legal move at all — an unplayable game. Restricting the vocabulary to words spelled entirely from the 250 most productive characters takes that to **84%**, against the English game's 76%.
+
+**Two slots instead of four changes the endgame,** which is why `Dictionary.rescueCards` exists. A one-card Chinese hand has a 16% chance of a legal move; in English it's 35%. At the English penalty of +2 cards per rescue, Chinese sat exactly at break-even — a rescue on 49% of turns and ~550 plays to finish a round. At +1 it lands at ~22 plays, in line with English's ~30. Both numbers are in `lib/scrabble-slam/dictionary.ts`.
+
+To regenerate or retune the list, the knobs are the frequency floor and the inventory size; a larger inventory means more words but a thinner hand.
+
 ### Languages
 
-The game ships English and Chinese, toggled from the corner of every game screen and remembered in `localStorage`. Strings live in one file, [`lib/scrabble-slam/i18n.ts`](lib/scrabble-slam/i18n.ts) — add a language by adding a dictionary there and an entry to `LANGUAGES`; any key you miss falls back to English rather than showing a raw key.
+The interface ships English and Chinese, toggled from the corner of every game screen and remembered in `localStorage`. Strings live in one file, [`lib/scrabble-slam/i18n.ts`](lib/scrabble-slam/i18n.ts) — add a language by adding a dictionary there and an entry to `LANGUAGES`; any key you miss falls back to English rather than showing a raw key.
 
-This translates the interface, not the puzzle. The game is built on changing one Latin letter of an English word, so the board, the cards and the dictionary stay English in every language. A Chinese speaker gets Chinese menus, rules and messages around an English word game. The rest of the portfolio is not translated — this is scoped to `/scrabble-slam`.
+The language toggle and the Chinese dictionary are independent: you can play English words with a Chinese interface, or vice versa. The rest of the portfolio is not translated — this is scoped to `/scrabble-slam`.
 
 ## Meal Calendar (the page at /calendar)
 
