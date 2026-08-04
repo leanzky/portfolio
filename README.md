@@ -145,6 +145,8 @@ Pick a word length (4, 5 or 6), a dictionary and a timer, then change one letter
 - **Endless** (the fourth timer option) removes the clock entirely. Emptying your hand becomes the *only* way to finish, so there's no surviving on the timer. Freeze and Swap are hidden there since both are paid for in seconds.
 - **If you have no legal move at all**, the game notices and rescues you automatically: your hand is redrawn and you take **2 extra cards** for it. Redrawn, not just reordered — reordering wouldn't change anything, and dead letters would pile up until every turn needed a rescue.
 
+All of the above applies to multiplayer too, enforced server-side by `0007_endless_and_rescue.sql`. The rescue isn't optional there: with a timer a stuck player just loses when the clock runs out, but in Endless they'd sit stuck forever and the room could never reach a terminal state. Because the board word is shared, a play is checked against *every* player's hand, not just the mover's — otherwise you could strand your opponent into a deadlock.
+
 **Scoring and the leaderboard.** Each finished round scores on words played (multiplied by word length), plus a clearing bonus and leftover time, minus draws and rescues. The top 10 runs are kept in `localStorage` and shown on the start and end screens. Deliberately per-device rather than server-backed: no account, no migration, and an anonymous global board on a portfolio site is mostly a spam target. To move it to Supabase later, replace `load` and `recordRun` in [`lib/scrabble-slam/leaderboard.ts`](lib/scrabble-slam/leaderboard.ts) — components read through the store, not storage.
 
 **Power-ups** live on a rail beside the board (a strip underneath on narrow screens) rather than taking up hand slots. Each runs on a cooldown measured in *words played*, so the way to earn abilities back is to keep making words:
@@ -178,7 +180,7 @@ Two things worth knowing if you change the word list: roughly **30% of 6-letter 
 
 1. Create a Supabase project.
 2. In **Authentication → Sign In / Providers**, enable **Anonymous sign-ins** (players get a seat with no login screen).
-3. In the **SQL Editor**, run the migrations in `supabase/migrations/` in filename order (`0001…`, `0002…`, `0003…`, `0004…`).
+3. In the **SQL Editor**, run the migrations in `supabase/migrations/` in filename order (`0001…` through `0007…`).
 4. Add these env vars (locally in `.env.local`, and in your host's project settings for production — see Deploying below):
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co

@@ -10,7 +10,12 @@ import {
 import { ensureAnonymousSession } from "@/lib/supabase-client";
 import { createRoom, joinRoom } from "@/lib/scrabble-slam/multiplayer-actions";
 
-const DURATIONS = [90, 120, 60];
+const DURATIONS = [
+  { seconds: 90, label: "90s" },
+  { seconds: 120, label: "120s" },
+  { seconds: 60, label: "60s" },
+  { seconds: 0, label: "Endless" },
+];
 
 export function MultiplayerLobby({
   onJoined,
@@ -171,21 +176,28 @@ export function MultiplayerLobby({
             <p className="text-xs font-bold uppercase tracking-wide text-green-700 mb-2">
               Timer
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {DURATIONS.map((d) => (
                 <button
-                  key={d}
-                  onClick={() => setDuration(d)}
+                  key={d.seconds}
+                  onClick={() => setDuration(d.seconds)}
                   className={`rounded-lg border-2 py-2 text-xs font-bold transition-colors ${
-                    duration === d
+                    duration === d.seconds
                       ? "border-lime-400 bg-lime-400/10 text-green-50"
                       : "border-green-900 text-green-600 hover:border-green-700"
                   }`}
                 >
-                  {d}s
+                  {d.label}
                 </button>
               ))}
             </div>
+            {duration === 0 && (
+              <p className="mt-2.5 rounded-lg border border-lime-900 bg-lime-400/5 px-3 py-2 text-[11px] leading-relaxed text-lime-200">
+                <span className="font-bold">Endless:</span> no clock, so the
+                race is purely to empty your hand first. Freeze and Swap are
+                off since both are paid for in seconds.
+              </p>
+            )}
           </div>
           <button
             onClick={handleCreate}

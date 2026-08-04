@@ -79,8 +79,10 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
 
   // Independent timeout ticker: catches the case where the clock runs out
   // with nobody making a move to trigger the check inside attempt_move.
+  // Endless rooms have no ends_at, so there's nothing to check.
+  const endless = room?.ends_at === null;
   useEffect(() => {
-    if (!roomId || room?.status !== "playing") {
+    if (!roomId || room?.status !== "playing" || endless) {
       if (tickRef.current) window.clearInterval(tickRef.current);
       return;
     }
@@ -90,7 +92,7 @@ export function useMultiplayerRoom(roomId: string | null, myPlayerId: string | n
     return () => {
       if (tickRef.current) window.clearInterval(tickRef.current);
     };
-  }, [roomId, room?.status]);
+  }, [roomId, room?.status, endless]);
 
   return { room, players, myHand, ready };
 }

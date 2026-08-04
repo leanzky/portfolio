@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Card } from "@/lib/scrabble-slam/engine";
-import { findHint, shuffle } from "@/lib/scrabble-slam/engine";
+import { findHint, MAX_HAND, shuffle } from "@/lib/scrabble-slam/engine";
+import type { RescueNotice } from "@/lib/scrabble-slam/reducer";
 import { dictionaries, type WordLength } from "@/lib/scrabble-slam/dictionary";
 import type { PlayerPublicRow, RoomRow } from "@/lib/scrabble-slam/multiplayer-types";
 import { attemptMove } from "@/lib/scrabble-slam/multiplayer-actions";
+import type { RpcResult } from "@/lib/scrabble-slam/multiplayer-types";
 import {
   Cooldowns,
   initialCooldowns,
@@ -23,6 +25,7 @@ import {
 import { WordGrid } from "./WordGrid";
 import { PlayerHand } from "./PlayerHand";
 import { PowerUpRail } from "./PowerUpRail";
+import { RescueToast } from "./RescueToast";
 import { Hud } from "./Hud";
 import { EndScreen } from "./EndScreen";
 
@@ -69,6 +72,10 @@ export function MultiplayerGame({
   // Display order only. The server owns which cards you hold; this just
   // reorders them locally, and cards it hasn't seen fall to the end.
   const [handOrder, setHandOrder] = useState<string[]>([]);
+  const [rescue, setRescue] = useState<RescueNotice | null>(null);
+
+  // Endless rooms carry no end time at all (see 0007_endless_and_rescue.sql).
+  const endless = room.ends_at === null;
   const muted = useSyncExternalStore(subscribeMuted, getMutedSnapshot, getMutedServerSnapshot);
   const lastStatus = useRef(room.status);
 
@@ -100,8 +107,26 @@ export function MultiplayerGame({
     }
   }
 
+  /** The server rescues a stuck hand automatically; surface it the same way
+      solo does. Shape comes from attempt_move in 0007. */
+  function noteRescue(result: RpcResult) {
+    const r = result.rescue as
+      | { rescued?: boolean; added?: number; word?: string | null }
+      | undefined;
+    if (!r?.rescued) return;
+    feedbackId += 1;
+    setRescue({
+      id: feedbackId,
+      added: r.added ?? 0,
+      rerolled: 0,
+      newWord: r.word ?? null,
+    });
+    sound.rescue();
+  }
+
   async function placeLetter(cardId: string, slotIndex: number) {
     const result = await attemptMove(room.id, "place_letter", cardId, slotIndex);
+    noteRescue(result);
     if (result.ok) {
       fireFeedback({ kind: "valid", slotIndex });
       // Making a word is what recharges abilities, same rule as solo.
@@ -144,6 +169,7 @@ export function MultiplayerGame({
     // applies it and the realtime subscription feeds the result back.
     const moveType = id === "chaos" ? "chaos" : id === "freeze" ? "freeze" : "purge";
     const result = await attemptMove(room.id, moveType, "n/a");
+    noteRescue(result);
     if (result.ok) {
       setCooldowns((c) => ({ ...c, [id]: def.cooldown }));
       setHint(null);
@@ -160,11 +186,15 @@ export function MultiplayerGame({
     if (!armedCardId) return;
     const r = await attemptMove(room.id, "swap", armedCardId);
     setArmedCardId(null);
+    noteRescue(r);
     if (r.ok) setStats((s) => ({ ...s, swaps: s.swaps + 1 }));
   }
 
   const timeLeft = room.ends_at
     ? Math.max(0, (new Date(room.ends_at).getTime() - now) / 1000)
+    : 0;
+  const elapsed = room.started_at
+    ? Math.max(0, (now - new Date(room.started_at).getTime()) / 1000)
     : 0;
 
   if (room.status === "won" || room.status === "timeout") {
@@ -212,11 +242,12 @@ export function MultiplayerGame({
 
         <Hud
           dictionaryId={room.dictionary_id}
-          endless={false}
+          endless={endless}
           timeLeft={timeLeft}
-          elapsed={0}
+          elapsed={elapsed}
           duration={room.duration_seconds}
           cardsLeft={myHand.length}
+          maxHand={MAX_HAND}
           wordsPlayed={stats.wordsPlayed}
           canSwap={!!armedCardId}
           muted={muted}
@@ -249,7 +280,13 @@ export function MultiplayerGame({
           onDragEnd={() => setDraggingCardId(null)}
         />
 
-        <PowerUpRail cooldowns={cooldowns} onUse={handleUsePowerUp} />
+        <PowerUpRail
+          cooldowns={cooldowns}
+          onUse={handleUsePowerUp}
+          unavailable={endless ? { freeze: "No timer" } : undefined}
+        />
+
+        <RescueToast rescue={rescue} />
       </div>
     </div>
   );
