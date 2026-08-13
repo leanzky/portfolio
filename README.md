@@ -252,14 +252,7 @@ The language toggle and the Chinese dictionary are independent: you can play Eng
 
 A private study track: twelve modules, 51 lessons, six project briefs, an interview question bank, and a readiness checklist. Reached from the Selected Work card, or directly at `/csharp`. No Supabase, no backend of any kind — it is a static page plus `localStorage`.
 
-### The passphrase gate is a lock, not security
-
-The page asks for a passphrase (`pleasehireme`, case- and whitespace-insensitive) and remembers the answer in `localStorage`. **This is obfuscation and nothing more.** Everything the page renders ships in the client bundle, so anyone determined can read the course without typing anything. It exists to keep the page out of casual browsing, and `robots: { index: false }` in `app/csharp/page.tsx` keeps it out of search results. Nothing behind it is confidential, which is what makes that trade acceptable.
-
-Two details worth keeping if this is ever edited:
-
-- The passphrase is stored in [`lib/csharp-course/gate.ts`](lib/csharp-course/gate.ts) as an FNV-1a hash rather than a literal, purely so that grepping the built JavaScript for the obvious string does not hand it over. To change it, hash the new value with the `hash` function in that file and replace `PASSPHRASE_HASH`.
-- `CourseRoot` renders the course **only after** unlocking, so the lesson markup is not in the initial HTML. The JS chunk still contains it. If this ever needs to protect something real, it has to move to the server.
+See **The passphrase gate** below — `/csharp` and `/gameshows` share one lock.
 
 ### Content lives in data, not components
 
@@ -273,6 +266,44 @@ Two rules when writing code samples, both because samples live inside template l
 
 - **Syntax highlighting** — [`lib/csharp-course/highlight.ts`](lib/csharp-course/highlight.ts) is a ~120-line tokeniser covering C#, bash, JSON, XML, SQL and plain text, rather than pulling in Prism or Shiki for one page. It tokenises line by line and returns plain data that the renderer turns into React elements, so nothing is ever injected as HTML. It deliberately does not track multi-line constructs (block comments, raw strings) — the samples avoid them, and line independence keeps it impossible to get stuck.
 - **Progress state** — read through `useSyncExternalStore`, not an effect. `localStorage` does not exist during server rendering, so the server and hydration snapshots are empty and React swaps in the real value after hydrating. Doing this with `useEffect` + `setState` works but trips the React Compiler lint rule this project builds with (`react-hooks/set-state-in-effect`), and it is the wrong tool: `localStorage` is an external store.
+
+## The passphrase gate (/csharp and /gameshows)
+
+Both private pages sit behind one lock, in [`lib/private-gate.ts`](lib/private-gate.ts) and [`components/private/PassphraseGate.tsx`](components/private/PassphraseGate.tsx). The passphrase is `pleasehireme`, case- and whitespace-insensitive, and **one unlock opens both pages** — they belong to the same person, so typing it twice is friction with no benefit. The lock screen takes a `theme` (`violet` for the course, `gold` for the catalogue) so it still looks like the page behind it.
+
+**This is obfuscation, not authorization, and the distinction matters.** Everything both pages render ships inside the client JavaScript bundle, so anyone who opens devtools can read the content without ever typing the passphrase. What the gate actually buys:
+
+- the pages do not open for a casual visitor who clicks the card,
+- the content is not in the initial HTML — the roots render the real page only after unlocking, so `curl` returns the lock screen and nothing else,
+- `robots: { index: false, follow: false }` on both routes keeps them out of search results.
+
+Nothing behind either page is confidential, which is the only reason that trade is acceptable. **If something genuinely private ever goes here, this is not enough** — that needs the passphrase checked on the server, an HttpOnly cookie, and the content passed from a server component as props so it never enters a client bundle at all.
+
+To change the passphrase: hash the new value with the `hash` function in `lib/private-gate.ts` and replace `PASSPHRASE_HASH`. It is stored hashed rather than literal purely so that grepping the built JavaScript for the obvious string does not hand it over.
+
+Note that the unlock is stored under `private-pages-unlocked-v1`. An earlier version used a course-specific key, so anyone already unlocked will be asked once more after this change.
+
+## Game Show Formats (the page at /gameshows)
+
+A single-page build catalogue: 39 television game show formats, each judged on how well it survives losing the studio, the audience and the host. Every entry carries its core loop, the part that is genuinely hard to build, and a twist worth building instead of a straight clone. Behind the passphrase gate, linked from Selected Work.
+
+Content is data in [`data/gameshows.ts`](data/gameshows.ts), same rule as everywhere else: adding a format means adding an object. The page derives its own counts, so the headline numbers never go stale when the list changes — but the **project card description in `data/site.ts` hard-codes "39 formats"**, so update that string if you add entries.
+
+Three parts of the file are not the catalogue and are the actually reusable bits:
+
+- `sharedMachinery` — the engineering every format needs (server-authoritative buzzers, never sending the answer to the client, host/player/spectator roles, fuzzy answer matching). Build once, reuse across formats.
+- `doesNotTranslate` — formats that genuinely do not work in a browser, and why. Worth keeping honest; the point of the page is judgement, not a list of every show ever made.
+- `legalNotes` — mechanics are not copyrightable, names and logos and theme music are. Build the mechanic, name it yourself.
+
+Filtering (genre, effort, "no realtime needed", search) is client-side over the whole array — 39 entries do not need anything cleverer, and it keeps the page static.
+
+## Project thumbnails
+
+Cards in Selected Work use screenshots at `public/projects/*.webp`, ~1600×1000 (16:10, the card's aspect ratio). The two newest were generated rather than taken by hand, which is repeatable:
+
+1. `npm run build && npm start` — use the **production** server, so Next's dev indicator badge is not in the frame.
+2. Screenshot with Playwright at a 1600×1000 viewport and `deviceScaleFactor: 2`. For `/csharp`, `addInitScript` sets the unlock flag and some lesson progress in `localStorage` first, so the shot shows the real page rather than the lock screen.
+3. Convert: `ffmpeg -i shot.png -vf "scale=1600:1000:flags=lanczos" -c:v libwebp -quality 82 -compression_level 6 out.webp` — lands around 50–80KB, in line with the existing thumbnails.
 
 ## Meal Calendar (the page at /calendar)
 

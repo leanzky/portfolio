@@ -1,0 +1,80 @@
+/* Page-scoped styling for /gameshows. Kept out of globals.css so the rest
+   of the portfolio never loads it. */
+
+/* Marquee bulbs around the hero — the one piece of set design worth having. */
+.marquee {
+  position: relative;
+}
+
+.marquee::before,
+.marquee::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background-image: radial-gradient(circle, rgba(245, 196, 81, 0.95) 22%, transparent 26%);
+  background-size: 26px 10px;
+  background-repeat: repeat-x;
+  animation: bulb-chase 1.6s steps(2) infinite;
+}
+
+.marquee::before {
+  top: -14px;
+}
+
+.marquee::after {
+  bottom: -14px;
+  animation-delay: 0.8s;
+}
+
+@keyframes bulb-chase {
+  0% {
+    opacity: 0.35;
+    filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.3));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(245, 196, 81, 0.75));
+  }
+  100% {
+    opacity: 0.35;
+    filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.3));
+  }
+}
+
+/* Stage lighting behind everything. */
+.stage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(70vw 45vh at 50% -10%, rgba(245, 196, 81, 0.14), transparent 70%),
+    radial-gradient(50vw 40vh at 0% 100%, rgba(56, 92, 214, 0.16), transparent 70%),
+    radial-gradient(50vw 40vh at 100% 60%, rgba(214, 56, 122, 0.1), transparent 70%);
+}
+
+/* The chevron on an open card. */
+.card summary::-webkit-details-marker {
+  display: none;
+}
+
+.card[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee::before,
+  .marquee::after {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .chevron {
+    transition: none;
+  }
+}

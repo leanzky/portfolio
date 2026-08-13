@@ -9,7 +9,7 @@ import {
   type Module,
 } from "@/data/csharp-course";
 import { useProgress } from "@/lib/csharp-course/useProgress";
-import { lock } from "@/lib/csharp-course/gate";
+import { lock } from "@/lib/private-gate";
 import { LessonView } from "./LessonView";
 import {
   InterviewView,

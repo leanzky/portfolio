@@ -136,6 +136,16 @@ export const site = {
         tags: ["C#", ".NET", "Learning"],
         internalHref: "/csharp",
         linkLabel: "Enter passphrase ->",
+        image: "/projects/csharp-course.webp",
+      },
+      {
+        name: "Game Show Formats for the Web",
+        description:
+          "A build catalogue of 39 television game show formats, judged on what survives when you remove the studio, the audience and the host. Core loop, the part that is actually hard to build, and the shared machinery underneath all of them.",
+        tags: ["Game Design", "Research", "Reference"],
+        internalHref: "/gameshows",
+        linkLabel: "Enter passphrase ->",
+        image: "/projects/gameshows.webp",
       },
       {
         name: "Payformers",

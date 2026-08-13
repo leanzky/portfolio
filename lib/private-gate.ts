@@ -3,21 +3,25 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * The passphrase gate for /csharp.
+ * The shared passphrase gate for the private pages (/csharp, /gameshows).
  *
- * This is deliberately a low-friction lock, not security. Everything the page
- * renders is in the client bundle, so anyone determined enough can read the
- * content without typing anything — the gate keeps the page out of casual
- * browsing and out of search results, which is all it is for. Nothing behind
- * it is confidential.
+ * This is deliberately a low-friction lock, NOT security. Everything the
+ * gated pages render ships in the client bundle, so anyone who opens devtools
+ * can read them without typing anything. It exists to keep the pages out of
+ * casual browsing and out of search results, which is all it is for. Nothing
+ * behind it is confidential, and that is what makes the trade acceptable.
  *
  * The passphrase is stored as a hash rather than a literal only so that
  * grepping the built JavaScript for the obvious string does not hand it over.
- * That is obfuscation, and calling it anything else would be dishonest. If
- * this ever needs to protect something real, it has to move to the server.
+ * That is obfuscation, and calling it anything else would be dishonest. Real
+ * protection means the content never reaching the browser unauthorised, which
+ * means a server-side check — see the README.
+ *
+ * One unlock opens every gated page: they belong to the same person, and
+ * typing the same phrase twice is friction with no benefit.
  */
 
-const UNLOCK_KEY = "csharp-course-unlocked-v1";
+const UNLOCK_KEY = "private-pages-unlocked-v1";
 
 /** FNV-1a, 32-bit. Small, fast, and sufficient for an equality check. */
 function hash(value: string): string {
