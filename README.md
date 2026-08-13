@@ -248,6 +248,32 @@ The interface ships English and Chinese, toggled from the corner of every game s
 
 The language toggle and the Chinese dictionary are independent: you can play English words with a Chinese interface, or vice versa. The rest of the portfolio is not translated — this is scoped to `/scrabble-slam`.
 
+## C# & .NET Career Track (the page at /csharp)
+
+A private study track: twelve modules, 51 lessons, six project briefs, an interview question bank, and a readiness checklist. Reached from the Selected Work card, or directly at `/csharp`. No Supabase, no backend of any kind — it is a static page plus `localStorage`.
+
+### The passphrase gate is a lock, not security
+
+The page asks for a passphrase (`pleasehireme`, case- and whitespace-insensitive) and remembers the answer in `localStorage`. **This is obfuscation and nothing more.** Everything the page renders ships in the client bundle, so anyone determined can read the course without typing anything. It exists to keep the page out of casual browsing, and `robots: { index: false }` in `app/csharp/page.tsx` keeps it out of search results. Nothing behind it is confidential, which is what makes that trade acceptable.
+
+Two details worth keeping if this is ever edited:
+
+- The passphrase is stored in [`lib/csharp-course/gate.ts`](lib/csharp-course/gate.ts) as an FNV-1a hash rather than a literal, purely so that grepping the built JavaScript for the obvious string does not hand it over. To change it, hash the new value with the `hash` function in that file and replace `PASSPHRASE_HASH`.
+- `CourseRoot` renders the course **only after** unlocking, so the lesson markup is not in the initial HTML. The JS chunk still contains it. If this ever needs to protect something real, it has to move to the server.
+
+### Content lives in data, not components
+
+Same rule as `data/site.ts`: everything is data in [`data/csharp-course/`](data/csharp-course/), split into `foundations.ts` (modules 00–03), `web.ts` (04–07), `production.ts` (08–11), and `career.ts` (projects, the 16-week plan, question bank, checklist, resources). Adding a lesson means adding an object, never touching a component.
+
+Two rules when writing code samples, both because samples live inside template literals: **no backslashes** (a `\n` inside a template literal becomes a real newline and silently mangles the sample) and **no backticks**.
+
+**Lesson ids are load-bearing.** Progress is stored per device against `moduleId/lessonId`, so renaming either id silently resets that lesson for anyone who had ticked it off. Add freely; rename carefully.
+
+### Two things built by hand instead of installed
+
+- **Syntax highlighting** — [`lib/csharp-course/highlight.ts`](lib/csharp-course/highlight.ts) is a ~120-line tokeniser covering C#, bash, JSON, XML, SQL and plain text, rather than pulling in Prism or Shiki for one page. It tokenises line by line and returns plain data that the renderer turns into React elements, so nothing is ever injected as HTML. It deliberately does not track multi-line constructs (block comments, raw strings) — the samples avoid them, and line independence keeps it impossible to get stuck.
+- **Progress state** — read through `useSyncExternalStore`, not an effect. `localStorage` does not exist during server rendering, so the server and hydration snapshots are empty and React swaps in the real value after hydrating. Doing this with `useEffect` + `setState` works but trips the React Compiler lint rule this project builds with (`react-hooks/set-state-in-effect`), and it is the wrong tool: `localStorage` is an external store.
+
 ## Meal Calendar (the page at /calendar)
 
 A personal, unrelated-to-the-game page: click a day to log how much you ate (1 Meal / 2 Meals / 3 Meals / 4 Meals / Excessive Eating). Not linked from the main nav — reachable at `/calendar` directly.

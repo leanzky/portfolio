@@ -1,0 +1,52 @@
+/* Page-scoped styling for /csharp. Kept out of globals.css so the rest of
+   the portfolio never loads it. */
+
+.shake {
+  animation: gate-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes gate-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-7px);
+  }
+  40%,
+  60% {
+    transform: translateX(7px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shake {
+    animation: none;
+  }
+}
+
+/* Ambient glow behind the whole page — the .NET violet, quietly. */
+.pageGlow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60vw 50vh at 15% 0%, rgba(124, 58, 237, 0.16), transparent 70%),
+    radial-gradient(50vw 40vh at 85% 100%, rgba(56, 189, 248, 0.1), transparent 70%);
+}
+
+/* Keep the caret and selection on-theme inside the dark shell. */
+.shell {
+  caret-color: rgb(196, 181, 253);
+}
+
+.shell ::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: rgb(245, 243, 255);
+}

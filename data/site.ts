@@ -130,6 +130,14 @@ export const site = {
         image: "/projects/scrabble-slam.webp",
       },
       {
+        name: "C# & .NET Career Track",
+        description:
+          "A full study track I wrote for myself while moving into .NET: twelve modules from the CLR to CI/CD, interview questions, and the projects that back them up. Passphrase-protected, because it is a workbench rather than a showcase.",
+        tags: ["C#", ".NET", "Learning"],
+        internalHref: "/csharp",
+        linkLabel: "Enter passphrase ->",
+      },
+      {
         name: "Payformers",
         description:
           "A platform connecting event organizers with singers, DJs, and live performers. Verified profiles, secure GCash, Maya, and card payments, and real-time booking updates, all in one app. Designed, built, and coded by me.",
