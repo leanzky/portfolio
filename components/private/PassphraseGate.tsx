@@ -7,7 +7,7 @@ import styles from "./gate.module.css";
 
 /** Each gated page keeps its own colour so the lock screen still looks like
     the page behind it. */
-export type GateTheme = "violet" | "gold";
+export type GateTheme = "violet" | "gold" | "sage";
 
 const THEMES: Record<
   GateTheme,
@@ -45,6 +45,20 @@ const THEMES: Record<
       "border-amber-400/40 bg-amber-400/10 text-amber-100 hover:border-amber-300 hover:bg-amber-400/20",
     hint: "text-slate-400/50",
     back: "text-slate-400/50 hover:text-amber-300",
+  },
+  // Light, on the portfolio's own beige — the health log is a daily tool
+  // used in the morning, and a dark screen is the wrong thing for that.
+  sage: {
+    card: "border-border bg-card shadow-[0_8px_40px_rgba(0,0,0,0.06)]",
+    kicker: "text-emerald-800/70",
+    heading: "text-foreground",
+    body: "text-muted",
+    input:
+      "border-border bg-background text-foreground placeholder:text-muted/50 focus:border-emerald-700/50",
+    button:
+      "border-transparent bg-accent text-accent-foreground hover:opacity-90",
+    hint: "text-muted",
+    back: "text-muted hover:text-foreground",
   },
 };
 

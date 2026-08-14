@@ -305,13 +305,38 @@ Cards in Selected Work use screenshots at `public/projects/*.webp`, ~1600×1000 
 2. Screenshot with Playwright at a 1600×1000 viewport and `deviceScaleFactor: 2`. For `/csharp`, `addInitScript` sets the unlock flag and some lesson progress in `localStorage` first, so the shot shows the real page rather than the lock screen.
 3. Convert: `ffmpeg -i shot.png -vf "scale=1600:1000:flags=lanczos" -c:v libwebp -quality 82 -compression_level 6 out.webp` — lands around 50–80KB, in line with the existing thumbnails.
 
-## Meal Calendar (the page at /calendar)
+## Health program (the page at /calendar)
 
-A personal, unrelated-to-the-game page: click a day to log how much you ate (1 Meal / 2 Meals / 3 Meals / 4 Meals / Excessive Eating). Not linked from the main nav — reachable at `/calendar` directly.
+Replaces the old meal-amount tracker. A personal 12-week plan for lowering blood pressure and losing weight, plus the daily log that feeds it: check-in, weight and BP trends, and progress photos. Behind the passphrase gate, `noindex`, and linked from the main nav.
 
-Shares the SAME Supabase project as the game (same env vars, same "Anonymous sign-ins" setting already enabled for multiplayer). One extra migration:
+**Setup:** run `supabase/migrations/0009_health_program.sql` in the SQL Editor. It creates `health_days`, `progress_photos`, and the private `progress-photos` Storage bucket with its policies. Same Supabase project and the same "Anonymous sign-ins" provider as everything else. `meal_logs` from `0003` is deliberately left in place — it still holds real history and nothing reads it; drop it yourself when you want it gone.
 
-Run `supabase/migrations/0003_meal_calendar.sql` in the SQL Editor (after the two scrabble-slam ones). Each anonymous browser identity only ever sees its own logged days — same RLS privacy pattern as a player's hand in the game.
+### The content is the deliverable
+
+The plan lives in [`data/health-plan.ts`](data/health-plan.ts) and is written for one person and one medication, not as a generic template: 120 kg at 172 cm, walking but not running, cooking Filipino food, on **Veztenor (amlodipine + losartan)**. Change any of those and the plan needs rewriting, not tweaking.
+
+Three parts are load-bearing and should not be edited casually:
+
+- **`medication`** — the ARB in Veztenor raises potassium, which is why the plan says never to use "lite salt" or potassium-based salt substitutes, the exact thing hypertension advice usually recommends. It also covers NSAIDs blunting the ARB, amlodipine ankle swelling being mistaken for weight gain, and blood pressure potentially running too low as weight comes off.
+- **`redFlags`** — the symptoms that mean the emergency room rather than the next appointment.
+- **`bpCategories`** — home-reading bands, and `classifyBp` in [`lib/health/metrics.ts`](lib/health/metrics.ts) grades by the *worse* of the two numbers, which is the standard rule.
+
+Everything is framed as general lifestyle guidance rather than medical advice, and the app repeats that in the footer of every tab. Keep that framing if you edit it.
+
+### How the tracking works
+
+Same pattern as the tracker it replaces — the browser talks to Supabase directly and RLS, not application code, is what guarantees you only see your own rows. `health_days` is one upsert-on-conflict row per day, so the form can save repeatedly through the day without tracking whether a row exists.
+
+**Progress photos are the one piece with real protection**, unlike the passphrase gate: a **private** bucket, storage policies that confine each identity to its own `<user_id>/` folder, and display through signed URLs that expire in an hour. Images are downscaled to 1280px in a canvas before upload — a phone camera produces 4–8 MB files and none of that resolution helps you see a body change. The camera is reached through `<input capture>` rather than `getUserMedia`, which opens the real camera app on a phone and falls back to a file picker on desktop.
+
+Two React details worth keeping:
+
+- The check-in form seeds its state from the saved row at mount and is **remounted via `key`** when the day changes or the row first loads — not synced with an effect, which trips this project's React Compiler lint rule and would also wipe half-typed input on every refetch. The key deliberately excludes `updated_at`, so saving does not reset the form under you.
+- Sign-in is inside the `try`: `signInAnonymously` *throws* rather than returning an error when the network is unreachable, and without that the page sat on "Loading…" forever offline. It now shows the error state with the migration hint, and the plan, exercise, food and safety tabs stay readable with no database at all.
+
+### Charts
+
+Two inline-SVG charts, no library. Weight and blood pressure are different scales so they are two charts, never one with two y-axes. Weight is a single series and carries no legend; blood pressure is two, so it gets a legend, direct labels on the latest point, and the readings table underneath — the orange series sits below 3:1 against the beige card surface, so identity never rests on colour alone. The two hues were checked against that surface rather than assumed (adjacent CVD ΔE 24.7, normal-vision ΔE 33.6).
 
 ## Design changes
 

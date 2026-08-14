@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { MealCalendarApp } from "@/components/meal-calendar/MealCalendarApp";
+import { HealthRoot } from "@/components/health/HealthRoot";
 
 export const metadata: Metadata = {
-  title: "Meal Calendar | Leandro Francia",
-  description: "A personal calendar for logging how much you ate each day.",
+  title: "Blood pressure & weight | Leandro Francia",
+  description: "Private health log and 12-week plan.",
+  // Personal health data — never in search results.
+  robots: { index: false, follow: false },
 };
 
-export default function CalendarPage() {
-  return <MealCalendarApp />;
+export default function HealthPage() {
+  return <HealthRoot />;
 }
