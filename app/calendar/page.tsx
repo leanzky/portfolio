@@ -12,6 +12,19 @@ export const metadata: Metadata = {
   description: "Private health log and 12-week plan.",
   // Personal health data — never in search results.
   robots: { index: false, follow: false },
+
+  // Only this page is installable. The manifest's scope is /calendar, so the
+  // portfolio around it stays an ordinary website and the home-screen icon
+  // opens straight into the tracker.
+  manifest: "/health.webmanifest",
+  icons: {
+    icon: [{ url: "/health/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/health/icon-512.png", sizes: "512x512", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Health",
+  },
 };
 
 export default function HealthPage() {
