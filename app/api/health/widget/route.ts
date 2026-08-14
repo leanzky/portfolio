@@ -61,7 +61,32 @@ function esc(value: string): string {
   );
 }
 
-function shell(theme: Theme, bare: boolean, body: string, href: string): string {
+/**
+ * Optional exact sizing, in CSS pixels. Widget hosts vary enough that the
+ * responsive default cannot be right everywhere, so `&w=` and `&h=` let the
+ * card be pinned to a known box without a redeploy. Bounded so a stray value
+ * cannot produce a card that is unreadable or absurd.
+ */
+function boundedPx(raw: string | null): number | null {
+  if (!raw) return null;
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value)) return null;
+  return Math.max(120, Math.min(1200, value));
+}
+
+function shell(
+  theme: Theme,
+  bare: boolean,
+  body: string,
+  href: string,
+  size: { w: number | null; h: number | null }
+): string {
+  // Appended after the .card rule, so equal specificity resolves in its favour.
+  const override =
+    size.w || size.h
+      ? `.card{${size.w ? `width:${size.w}px;` : ""}${size.h ? `min-height:${size.h}px;height:${size.h}px;` : ""}}`
+      : "";
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -80,8 +105,15 @@ function shell(theme: Theme, bare: boolean, body: string, href: string): string 
   }
   .card{
     display:flex;flex-direction:column;justify-content:space-between;gap:0.5em;
-    height:100%;width:100%;
-    padding:clamp(10px,4.5vw,20px);
+    /* Height comes from the content, never from the viewport. Widget hosts
+       split into two camps: some size the WebView to the widget's box, others
+       render the full page and let you crop a region out of it. Filling the
+       viewport looks right in the first and falls apart in the second, with
+       the footer stranded hundreds of pixels below the frame. A content-height
+       card with a widget-shaped floor is correct in both. */
+    height:auto;width:100%;
+    min-height:min(45vw,200px);
+    padding:clamp(12px,4.2vw,20px);
     background:${bare ? "transparent" : theme.bg};
     border-radius:${bare ? "0" : "clamp(12px,5vw,24px)"};
     text-decoration:none;color:inherit;
@@ -91,23 +123,23 @@ function shell(theme: Theme, bare: boolean, body: string, href: string): string 
   .mark{
     flex:none;display:grid;place-items:center;
     width:1.5em;height:1.5em;border-radius:50%;
-    font-size:clamp(12px,min(5.4vw,13vh),22px);line-height:1;
+    font-size:clamp(12px,5vw,21px);line-height:1;
     font-weight:700;
   }
   .headline{
     flex:1;min-width:0;
-    font-size:clamp(13px,min(6.6vw,15vh),26px);
+    font-size:clamp(15px,6.4vw,26px);
     font-weight:650;letter-spacing:-0.015em;line-height:1.1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .week{
-    flex:none;font-size:clamp(8px,min(3vw,7vh),12px);
+    flex:none;font-size:clamp(8px,2.9vw,12px);
     letter-spacing:0.08em;text-transform:uppercase;color:${theme.muted};
   }
   .chips{display:flex;flex-wrap:wrap;gap:0.35em 0.75em;min-width:0}
   .chip{
     display:flex;align-items:center;gap:0.4em;
-    font-size:clamp(9px,min(3.5vw,8.5vh),14px);line-height:1.2;
+    font-size:clamp(10px,3.4vw,14px);line-height:1.2;
     white-space:nowrap;
   }
   .dot{flex:none;width:0.6em;height:0.6em;border-radius:50%}
@@ -116,11 +148,12 @@ function shell(theme: Theme, bare: boolean, body: string, href: string): string 
   .off{color:${theme.muted}}
   .foot{
     border-top:1px solid ${theme.line};padding-top:0.5em;
-    font-size:clamp(8px,min(3.1vw,7.5vh),13px);line-height:1.3;
+    font-size:clamp(9px,3vw,13px);line-height:1.3;
     color:${theme.muted};
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .foot b{color:${theme.ink};font-weight:600}
+  ${override}
 </style>
 </head>
 <body><a class="card" href="${esc(href)}">${body}</a></body>
@@ -202,7 +235,9 @@ export async function GET(request: NextRequest) {
 
   // Always 200, even on failure: a widget host shows its own broken-page state
   // for an error status, which tells you less than the card above does.
-  return new Response(shell(theme, bare, body, href), {
+  const size = { w: boundedPx(params.get("w")), h: boundedPx(params.get("h")) };
+
+  return new Response(shell(theme, bare, body, href, size), {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",

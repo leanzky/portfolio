@@ -387,11 +387,13 @@ Two separate things, because Android treats them separately: an **icon** you tap
 
 Because Firefox on Android shares one profile between the browser and installed sites, the Supabase session carries over — you sign in once, not once per surface.
 
-**The widget** cannot be a web page; Android has no such mechanism. So `/api/health/widget` serves a complete, self-contained HTML document designed to be rendered *by* a widget app that displays a URL. It sizes itself off the viewport, which inside a widget host is the widget's own box, so one document covers a 2×2 and a 4×2 without configuration. Everything is inline — not one external request — and the only scripting is a `<meta http-equiv="refresh">`, because widget WebViews are not browsers and should not be assumed to behave like one.
+**The widget** cannot be a web page; Android has no such mechanism. So `/api/health/widget` serves a complete, self-contained HTML document designed to be rendered *by* a widget app that displays a URL. Everything is inline — not one external request — and the only scripting is a `<meta http-equiv="refresh">`, because widget WebViews are not browsers and should not be assumed to behave like one.
+
+Widget hosts fall into two camps and the card has to survive both. Some size the WebView to the widget's box; others render the page at full phone height and let you crop a region out of it. **Filling the viewport is only correct in the first**, and in the second it strands the footer hundreds of pixels below whatever you framed — which is exactly what happened on the first attempt. So the card takes its height from its content, with a widget-shaped floor (`min-height: min(45vw, 200px)`) and no `vh` anywhere in its type scale.
 
 It answers the question the widget exists for — *did I log today?* — with a glyph, a colour, and a written label, so it never depends on colour alone. Under that: walk minutes against the current phase's target, strength, food, meds; then streak, latest weight, and total lost. The last item on the footer line is the time the snapshot was taken, so a frozen widget is visibly frozen instead of quietly trusted.
 
-Query options: `&theme=light` for the site's beige instead of the default dark card, and `&bare=1` to drop the background when the widget app draws its own.
+Query options: `&theme=light` for the site's beige instead of the default dark card, `&bare=1` to drop the background when the widget app draws its own, and `&w=` / `&h=` in CSS pixels to pin the card to an exact box when a host's own framing fights the responsive default. The last two are bounded to 120–1200 and ignore anything unparseable, so a typo degrades to the default rather than to an unreadable card.
 
 For anything that would rather parse than render — KWGT, Tasker, a shortcut — `/api/health/status` returns the same data as JSON.
 
