@@ -334,6 +334,19 @@ Two React details worth keeping:
 - The check-in form seeds its state from the saved row at mount and is **remounted via `key`** when the day changes or the row first loads — not synced with an effect, which trips this project's React Compiler lint rule and would also wipe half-typed input on every refetch. The key deliberately excludes `updated_at`, so saving does not reset the form under you.
 - Sign-in is inside the `try`: `signInAnonymously` *throws* rather than returning an error when the network is unreachable, and without that the page sat on "Loading…" forever offline. It now shows the error state with the migration hint, and the plan, exercise, food and safety tabs stay readable with no database at all.
 
+### Built for a phone
+
+This page is used one-handed, in the morning, on a phone — so the mobile rules here are requirements, not polish:
+
+- **44px minimum touch targets** on everything tappable: tab bar, counters, pose chips, accordion headers, the header links. Audited with a script that walks every interactive element at 375 / 390 / 412px and reports anything under 40px tall.
+- **16px minimum font on inputs.** iOS Safari zooms the page when you focus a smaller field and never zooms back out. Every input and textarea, including the passphrase field, is `text-base` for exactly this reason.
+- **No hover-only controls.** The photo delete button was `opacity-0 group-hover:opacity-100`, which simply does not exist on a touchscreen — it is now always visible.
+- **The save button sticks to the bottom of the viewport** on small screens, so you never scroll back up past the whole form to save.
+- **Charts measure their container and draw at 1 SVG unit = 1 CSS pixel.** A fixed 720-unit viewBox squeezed into a 350px phone renders 11px labels at about 5px. The `ResizeObserver` in `TrendCharts.tsx` is what keeps axis text readable, and it drops to fewer gridlines and a shorter chart under 480px.
+- The camera uses `<input capture="environment">` — the phone's real camera app and rear lens, falling back to a file picker on desktop.
+
+Re-run the audit with the scripts pattern in the README's testing section; the check that matters is zero horizontal overflow plus no sub-40px targets on every tab.
+
 ### Charts
 
 Two inline-SVG charts, no library. Weight and blood pressure are different scales so they are two charts, never one with two y-axes. Weight is a single series and carries no legend; blood pressure is two, so it gets a legend, direct labels on the latest point, and the readings table underneath — the orange series sits below 3:1 against the beige card surface, so identity never rests on colour alone. The two hues were checked against that surface rather than assumed (adjacent CVD ΔE 24.7, normal-vision ΔE 33.6).

@@ -210,14 +210,15 @@ export function MoveView() {
           {exercises.map((exercise) => (
             <details
               key={exercise.id}
-              className="group rounded-lg border border-border bg-background/50 px-4 py-3"
+              className="group rounded-lg border border-border bg-background/50 px-4"
             >
-              <summary className="cursor-pointer list-none font-medium marker:content-none">
+              {/* min-h-11: this is tapped with a thumb, not clicked */}
+              <summary className="flex min-h-11 cursor-pointer list-none items-center py-2.5 font-medium marker:content-none">
                 <span className="mr-2 text-muted group-open:hidden">+</span>
                 <span className="mr-2 hidden text-muted group-open:inline">−</span>
                 {exercise.name}
               </summary>
-              <div className="mt-3 space-y-2.5 pl-6 text-sm leading-relaxed">
+              <div className="mb-3 space-y-2.5 pl-6 text-sm leading-relaxed">
                 <p className="text-foreground/80">{exercise.how}</p>
                 <p className="border-l-2 border-amber-600/40 pl-3 text-foreground/75">
                   <span className="font-medium">Cue: </span>

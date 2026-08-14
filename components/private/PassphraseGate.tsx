@@ -121,7 +121,9 @@ export function PassphraseGate({
             onChange={(event) => setValue(event.target.value)}
             placeholder="passphrase"
             aria-invalid={error}
-            className={`w-full rounded-xl border px-4 py-3 font-mono text-sm outline-none transition ${
+            // text-base, not text-sm: iOS Safari zooms the page when a focused
+            // input is under 16px, and does not zoom back out afterwards.
+            className={`w-full rounded-xl border px-4 py-3 font-mono text-base outline-none transition ${
               error ? "border-rose-500/70 focus:border-rose-400" : t.input
             }`}
           />

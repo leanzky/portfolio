@@ -113,7 +113,7 @@ function Counter({
             type="button"
             onClick={() => onChange(Math.max(0, value - 1))}
             aria-label={`One fewer ${label}`}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-border text-lg leading-none transition hover:border-foreground/40"
+            className="grid h-11 w-11 place-items-center rounded-lg border border-border text-xl leading-none transition active:bg-foreground/[0.06] hover:border-foreground/40"
           >
             −
           </button>
@@ -127,7 +127,7 @@ function Counter({
             type="button"
             onClick={() => onChange(Math.min(max, value + 1))}
             aria-label={`One more ${label}`}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-border text-lg leading-none transition hover:border-foreground/40"
+            className="grid h-11 w-11 place-items-center rounded-lg border border-border text-xl leading-none transition active:bg-foreground/[0.06] hover:border-foreground/40"
           >
             +
           </button>
@@ -309,16 +309,20 @@ export function TodayView({
               rows={3}
               maxLength={2000}
               placeholder="Knee felt fine. Walked before the rain. Swollen ankles again."
-              className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-foreground/40"
+              // text-base, not text-sm: iOS Safari zooms the whole page when
+              // you focus an input smaller than 16px, and never zooms back.
+              className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base outline-none focus:border-foreground/40"
             />
           </label>
 
-          <div className="flex flex-wrap items-center gap-4">
+          {/* Sticks to the bottom of the screen on a phone, so you never have
+              to scroll back up past the whole form to save. */}
+          <div className="sticky bottom-0 -mx-5 flex flex-wrap items-center gap-4 border-t border-border bg-card/95 px-5 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
             <button
               type="button"
               onClick={save}
               disabled={saving}
-              className="rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-50"
+              className="min-h-12 flex-1 rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
             >
               {saving ? "Saving…" : "Save today"}
             </button>

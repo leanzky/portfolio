@@ -121,21 +121,28 @@ export function HealthApp() {
               Week {dashboard.week || "—"} of 12
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <Link href="/" className="text-xs text-muted transition-colors hover:text-foreground">
+          {/* Touch targets: 44px minimum, which is why these have padding
+              rather than being bare text links. */}
+          <div className="-mr-2 flex shrink-0 items-center">
+            <Link
+              href="/"
+              className="flex min-h-11 items-center px-3 text-xs text-muted transition-colors hover:text-foreground"
+            >
               Portfolio
             </Link>
             <button
               type="button"
               onClick={lock}
-              className="text-xs text-muted transition-colors hover:text-foreground"
+              className="flex min-h-11 items-center px-3 text-xs text-muted transition-colors hover:text-foreground"
             >
               Lock
             </button>
           </div>
         </div>
 
-        <nav className="mx-auto max-w-5xl overflow-x-auto px-5 pb-2 sm:px-8">
+        {/* Scrolls horizontally on a phone; the negative margin lets the row
+            bleed to the screen edge so it is obvious there is more to swipe. */}
+        <nav className="mx-auto max-w-5xl overflow-x-auto px-5 pb-1.5 sm:px-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex gap-1">
             {TABS.map((entry) => (
               <button
@@ -143,7 +150,7 @@ export function HealthApp() {
                 type="button"
                 onClick={() => setTab(entry.id)}
                 aria-current={tab === entry.id}
-                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm transition ${
+                className={`flex min-h-11 shrink-0 items-center rounded-lg px-3.5 text-sm transition ${
                   tab === entry.id
                     ? "bg-foreground text-background font-medium"
                     : "text-muted hover:bg-foreground/[0.06] hover:text-foreground"
@@ -206,11 +213,12 @@ export function HealthApp() {
 
           {tab === "today" && status === "ready" && (
             <TodayView
-              // Remount when the day changes or when today's row first loads,
-              // so the form seeds itself from saved data without an effect.
-              // Deliberately not keyed on updated_at: a save must not reset
-              // the form under the person who just filled it in.
-              key={`${todayKey}:${days[todayKey] ? "loaded" : "empty"}`}
+              // Keyed on the date alone. This only renders once the day's data
+              // has loaded, so the form seeds itself from the saved row at
+              // mount without an effect — and because the key never changes on
+              // save, the "Saved at" confirmation survives the first save of
+              // the day instead of being remounted away.
+              key={todayKey}
               dateKey={todayKey}
               row={days[todayKey]}
               onSave={handleSave}

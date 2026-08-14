@@ -90,7 +90,7 @@ export function PhotoTracker({
                 type="button"
                 onClick={() => setPose(option.id)}
                 aria-pressed={pose === option.id}
-                className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                className={`min-h-11 rounded-full border px-5 text-sm transition ${
                   pose === option.id
                     ? "border-foreground/50 bg-foreground/[0.06] font-medium"
                     : "border-border text-muted hover:border-foreground/30"
@@ -103,7 +103,11 @@ export function PhotoTracker({
           <p className="mt-2 text-xs text-muted">{POSES.find((p) => p.id === pose)?.hint}</p>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          {/* capture="environment" opens the phone's rear camera directly —
+              better glass than the selfie lens, and the right choice when
+              someone else is holding the phone or you are using a mirror.
+              On a desktop the attribute is ignored and this is a file picker. */}
           <input
             ref={cameraRef}
             type="file"
@@ -123,7 +127,7 @@ export function PhotoTracker({
             type="button"
             onClick={() => cameraRef.current?.click()}
             disabled={busy}
-            className="rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-50"
+            className="min-h-12 rounded-lg bg-accent px-5 text-sm font-semibold text-accent-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
           >
             {busy ? "Saving…" : "Take a photo"}
           </button>
@@ -131,7 +135,7 @@ export function PhotoTracker({
             type="button"
             onClick={() => galleryRef.current?.click()}
             disabled={busy}
-            className="rounded-lg border border-border px-5 py-3 text-sm font-medium transition hover:border-foreground/40 disabled:opacity-50"
+            className="min-h-12 rounded-lg border border-border px-5 text-sm font-medium transition hover:border-foreground/40 disabled:opacity-50"
           >
             Upload from gallery
           </button>
@@ -168,7 +172,7 @@ export function PhotoTracker({
                   type="button"
                   onClick={() => setComparePose(option.id)}
                   aria-pressed={comparePose === option.id}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                  className={`min-h-11 rounded-full border px-4 text-xs transition ${
                     comparePose === option.id
                       ? "border-foreground/50 bg-foreground/[0.06] font-medium"
                       : "border-border text-muted hover:border-foreground/30"
@@ -245,13 +249,15 @@ export function PhotoTracker({
                   {formatDate(photo.taken_on)} · {photo.pose}
                   {photo.weight_kg !== null && ` · ${photo.weight_kg} kg`}
                 </figcaption>
+                {/* Always visible: a hover-only control does not exist on a
+                    touchscreen, and this page is used on a phone. */}
                 <button
                   type="button"
                   onClick={() => remove(photo)}
-                  className="absolute right-2 top-2 rounded-md bg-background/90 px-2 py-1 text-xs opacity-0 transition group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete photo"
+                  className="absolute right-1.5 top-1.5 grid h-11 w-11 place-items-center rounded-lg bg-background/85 text-xs backdrop-blur transition hover:bg-background"
+                  aria-label={`Delete photo from ${photo.taken_on}`}
                 >
-                  Delete
+                  ✕
                 </button>
               </figure>
             ))}
