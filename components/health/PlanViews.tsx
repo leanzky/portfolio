@@ -16,9 +16,10 @@ import {
   sampleDays,
   shoppingList,
   swaps,
+  whenNoGulay,
   workouts,
 } from "@/data/health-plan";
-import { BP_TONE_CLASS, phaseFor, toDateKey } from "@/lib/health/metrics";
+import { phaseFor, toDateKey } from "@/lib/health/metrics";
 
 function Card({ children }: { children: React.ReactNode }) {
   return <div className="rounded-xl border border-border bg-card p-5">{children}</div>;
@@ -345,6 +346,29 @@ export function EatView() {
       </Card>
 
       <Card>
+        <h3 className="font-semibold">When there is no gulay</h3>
+        <p className="mt-1 text-sm leading-relaxed text-muted">
+          Vegetables are not always available, and a plan that collapses on those days is not a
+          plan. In rough order of how well they keep.
+        </p>
+        <div className="mt-4 space-y-3">
+          {whenNoGulay.map((item, index) => (
+            <div
+              key={item.option}
+              className={`rounded-lg border p-4 ${
+                index === whenNoGulay.length - 1
+                  ? "border-amber-600/30 bg-amber-600/[0.04]"
+                  : "border-border bg-background/50"
+              }`}
+            >
+              <p className="text-sm font-medium">{item.option}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
         <h3 className="font-semibold">Palengke list</h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {shoppingList.map((group) => (
@@ -385,6 +409,16 @@ export function EatView() {
 }
 
 /* ------------------------------------------------------------------ */
+
+/* Blood pressure is no longer tracked in the app, so these live here rather
+   than in metrics — they are only used to explain a reading you were given
+   at a clinic or pharmacy. Status colours ship with a label, never alone. */
+const BP_TONE: Record<string, string> = {
+  good: "text-[#0ca30c] border-[#0ca30c]/40 bg-[#0ca30c]/10",
+  warning: "text-[#a06f00] border-[#fab219]/50 bg-[#fab219]/10",
+  serious: "text-[#b4552b] border-[#ec835a]/50 bg-[#ec835a]/10",
+  critical: "text-[#d03b3b] border-[#d03b3b]/50 bg-[#d03b3b]/10",
+};
 
 const SEVERITY_STYLE: Record<string, string> = {
   high: "border-rose-600/35 bg-rose-600/[0.05]",
@@ -436,10 +470,11 @@ export function SafetyView() {
       </div>
 
       <Card>
-        <h3 className="font-semibold">Measuring blood pressure properly</h3>
+        <h3 className="font-semibold">Getting your blood pressure checked</h3>
         <p className="mt-1 text-sm text-muted">
-          A badly taken reading is worse than no reading — it sends you and your doctor chasing a
-          number that was never real.
+          You are not tracking this daily — there is no monitor, and daily readings are not
+          necessary. What matters is a properly taken reading about once a month, because a badly
+          taken one sends you and your doctor chasing a number that was never real.
         </p>
         <ol className="mt-4 space-y-2">
           {bpTechnique.map((step, i) => (
@@ -455,7 +490,7 @@ export function SafetyView() {
         <h3 className="font-semibold">What the numbers mean</h3>
         <div className="mt-4 space-y-2">
           {bpCategories.map((category) => (
-            <div key={category.label} className={`rounded-lg border p-4 ${BP_TONE_CLASS[category.tone]}`}>
+            <div key={category.label} className={`rounded-lg border p-4 ${BP_TONE[category.tone]}`}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold">{category.label}</span>
                 <span className="text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>

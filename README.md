@@ -305,11 +305,25 @@ Cards in Selected Work use screenshots at `public/projects/*.webp`, ~1600×1000 
 2. Screenshot with Playwright at a 1600×1000 viewport and `deviceScaleFactor: 2`. For `/csharp`, `addInitScript` sets the unlock flag and some lesson progress in `localStorage` first, so the shot shows the real page rather than the lock screen.
 3. Convert: `ffmpeg -i shot.png -vf "scale=1600:1000:flags=lanczos" -c:v libwebp -quality 82 -compression_level 6 out.webp` — lands around 50–80KB, in line with the existing thumbnails.
 
-## Health program (the page at /calendar)
+## Another Chance of Health (the page at /calendar)
 
-Replaces the old meal-amount tracker. A personal 12-week plan for lowering blood pressure and losing weight, plus the daily log that feeds it: check-in, weight and BP trends, and progress photos. Behind the passphrase gate, `noindex`, and linked from the main nav.
+Replaces the old meal-amount tracker. A personal 12-week plan for losing weight and lowering blood pressure, plus the daily log that feeds it: check-in, food diary, weight and walking trends, and progress photos. `noindex`, linked from the main nav, and behind a **real login** rather than the passphrase gate.
 
-**Setup:** run `supabase/migrations/0009_health_program.sql` in the SQL Editor. It creates `health_days`, `progress_photos`, and the private `progress-photos` Storage bucket with its policies. Same Supabase project and the same "Anonymous sign-ins" provider as everything else. `meal_logs` from `0003` is deliberately left in place — it still holds real history and nothing reads it; drop it yourself when you want it gone.
+**Setup, in order:**
+
+1. Run `supabase/migrations/0009_health_program.sql`, then `0010_meals_no_bp.sql`, in the SQL Editor. Together they create `health_days`, `progress_photos`, and the private `progress-photos` Storage bucket with its policies.
+2. In **Authentication → Users → Add user**, create one account with your email and password, and tick *Auto Confirm User*.
+3. In **Authentication → Providers → Email**, turn **off** "Enable sign ups". Otherwise anyone can register — harmless thanks to RLS, since they would get their own empty log, but there is no reason to allow it.
+
+`meal_logs` from `0003` is deliberately left in place — it holds real history and nothing reads it; drop it yourself when you want it gone.
+
+### Why this page has real auth and the others do not
+
+`/csharp` and `/gameshows` are static content behind a client-side passphrase, which is obfuscation. This page is different: weight history, a food diary and body photos in a real database. So it uses **Supabase email + password** — the password never enters the bundle, Supabase verifies it, and every RLS policy already keys off `auth.uid()`, so no SQL changed.
+
+It also fixes a real flaw in the anonymous-auth version this replaces. An anonymous identity lives in one browser's storage: clearing site data or opening the page on a second device produced a *different* identity and an empty log, with no way back to the old rows. A real account means the same data on the phone, the laptop, and after any browser reset.
+
+**One caveat worth keeping in mind:** the account password is currently the same string as the passphrase on the obfuscation-gated pages, and that passphrase is recoverable from the client bundle. Anyone who bothers to extract it there could try it here. Changing the account password in the Supabase dashboard needs no code change and closes that path.
 
 ### The content is the deliverable
 

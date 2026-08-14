@@ -268,57 +268,54 @@ export function WeightChart({ points }: { points: Point[] }) {
   );
 }
 
-export function BloodPressureChart({
-  systolic,
-  diastolic,
-}: {
-  systolic: Point[];
-  diastolic: Point[];
-}) {
+/** Walking is the daily number now that blood pressure is not tracked, so it
+    gets the second chart rather than a line in a table. */
+export function WalkChart({ points }: { points: Point[] }) {
   return (
     <Chart
-      lines={[
-        { points: systolic, color: SERIES_1, label: "Systolic (top)" },
-        { points: diastolic, color: SERIES_2, label: "Diastolic (bottom)" },
-      ]}
-      reference={{ value: profile.homeBpTarget.systolic, label: "target" }}
-      caption={`Home readings. The dashed line is the systolic target of ${profile.homeBpTarget.systolic}; the diastolic target is ${profile.homeBpTarget.diastolic}. Your doctor sets your real target — a single reading means little, the weekly average is the number that counts.`}
-      unit="mmHg"
+      lines={[{ points, color: SERIES_2, label: "Minutes walked" }]}
+      reference={{ value: 30, label: "floor" }}
+      caption="Minutes walked per day. The dashed line is the 30-minute floor — the number to hit on a day you do not feel like it."
+      unit="min"
     />
   );
 }
 
-/** The table view — required relief for the orange series, and genuinely
-    the easiest way to read your last few days on a phone. */
+/** The table view — the easiest way to read your last few days on a phone,
+    and the relief that lets the orange series carry meaning. */
 export function ReadingsTable({
   rows,
 }: {
-  rows: { date: string; systolic: number | null; diastolic: number | null; weight: number | null }[];
+  rows: { date: string; weight: number | null; walk: number; strength: boolean; ate: string | null }[];
 }) {
   if (rows.length === 0) return null;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full min-w-[380px] text-left text-sm">
+      <table className="w-full min-w-[420px] text-left text-sm">
         <caption className="px-4 pt-4 text-xs text-muted">
           Your last {rows.length} logged {rows.length === 1 ? "day" : "days"}.
         </caption>
         <thead>
           <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
             <th className="px-4 py-3 font-medium">Date</th>
-            <th className="px-3 py-3 font-medium">Sys</th>
-            <th className="px-3 py-3 font-medium">Dia</th>
-            <th className="px-4 py-3 font-medium">Weight</th>
+            <th className="px-3 py-3 font-medium">Weight</th>
+            <th className="px-3 py-3 font-medium">Walk</th>
+            <th className="px-3 py-3 font-medium">Str</th>
+            <th className="px-4 py-3 font-medium">Ate</th>
           </tr>
         </thead>
         <tbody style={{ fontVariantNumeric: "tabular-nums" }}>
           {rows.map((row) => (
             <tr key={row.date} className="border-b border-border/60 last:border-0">
               <td className="whitespace-nowrap px-4 py-2.5">{formatDate(row.date)}</td>
-              <td className="px-3 py-2.5">{row.systolic ?? "—"}</td>
-              <td className="px-3 py-2.5">{row.diastolic ?? "—"}</td>
-              <td className="whitespace-nowrap px-4 py-2.5">
+              <td className="whitespace-nowrap px-3 py-2.5">
                 {row.weight !== null ? `${row.weight} kg` : "—"}
+              </td>
+              <td className="px-3 py-2.5">{row.walk > 0 ? `${row.walk}m` : "—"}</td>
+              <td className="px-3 py-2.5">{row.strength ? "✓" : "—"}</td>
+              <td className="max-w-[16rem] truncate px-4 py-2.5 text-muted" title={row.ate ?? ""}>
+                {row.ate ?? "—"}
               </td>
             </tr>
           ))}

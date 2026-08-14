@@ -1,14 +1,7 @@
 "use client";
 
 import { milestones, profile, truths } from "@/data/health-plan";
-import {
-  BP_TONE_CLASS,
-  bmiLabel,
-  classifyBp,
-  formatDate,
-  nextMilestone,
-  type Dashboard as DashboardData,
-} from "@/lib/health/metrics";
+import { bmiLabel, nextMilestone, type Dashboard as DashboardData } from "@/lib/health/metrics";
 
 function Stat({
   label,
@@ -58,7 +51,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
     data.currentWeight !== null
       ? milestones.filter((m) => m.weightKg >= data.currentWeight!).length
       : 0;
-  const bp = data.latestBp ? classifyBp(data.latestBp.systolic, data.latestBp.diastolic) : null;
+  const walkTargetMinutes = 30 * 7;
 
   return (
     <div className="space-y-8">
@@ -84,9 +77,12 @@ export function Dashboard({ data }: { data: DashboardData }) {
           accent={(data.lostKg ?? 0) > 0}
         />
         <Stat
-          label="Latest BP"
-          value={data.latestBp ? `${data.latestBp.systolic}/${data.latestBp.diastolic}` : "—"}
-          sub={data.latestBp ? formatDate(data.latestBp.date) : "Log a reading this morning"}
+          label="Walked this week"
+          value={`${data.walkMinutesThisWeek} min`}
+          sub={`${data.walkDaysThisWeek} of 7 days · ${data.strengthThisWeek} strength ${
+            data.strengthThisWeek === 1 ? "session" : "sessions"
+          }`}
+          accent={data.walkMinutesThisWeek >= walkTargetMinutes}
         />
         <Stat
           label="Streak"
@@ -95,29 +91,6 @@ export function Dashboard({ data }: { data: DashboardData }) {
           accent={data.streak >= 3}
         />
       </div>
-
-      {/* ---------- blood pressure verdict ---------- */}
-      {bp && data.bpAverage && (
-        <div className={`rounded-xl border p-5 ${BP_TONE_CLASS[bp.tone]}`}>
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <p className="font-semibold">{bp.label}</p>
-            <p className="text-sm" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {data.bpAverage.count}-reading average:{" "}
-              {Math.round(data.bpAverage.systolic)}/{Math.round(data.bpAverage.diastolic)}
-            </p>
-          </div>
-          <p className="mt-2 text-sm leading-relaxed text-foreground/80">{bp.meaning}</p>
-          {data.bpChange !== null && (
-            <p className="mt-2 text-sm font-medium text-foreground/80">
-              {data.bpChange < -1
-                ? `Your systolic average is down ${Math.abs(data.bpChange).toFixed(0)} points since your first week. That is the plan working.`
-                : data.bpChange > 1
-                  ? `Your systolic average is up ${data.bpChange.toFixed(0)} points versus your first week. Worth mentioning to your doctor — and check the sodium in the last few days.`
-                  : "Your systolic average is roughly level with your first week."}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* ---------- progress toward the goals ---------- */}
       <div className="rounded-xl border border-border bg-card p-5">
@@ -135,14 +108,18 @@ export function Dashboard({ data }: { data: DashboardData }) {
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-border bg-background/50 p-3.5">
-            <p className="text-xs text-muted">This week</p>
+            <p className="text-xs text-muted">Food logged this week</p>
             <p className="mt-1 text-sm">
               <span className="font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>
-                {data.walkMinutesThisWeek}
+                {data.mealsLoggedThisWeek}
               </span>{" "}
-              minutes walked ·{" "}
-              <span className="font-semibold">{data.strengthThisWeek}</span> strength{" "}
-              {data.strengthThisWeek === 1 ? "session" : "sessions"}
+              of 7 days
+              {data.mealsLoggedThisWeek < 5 && (
+                <span className="text-muted">
+                  {" "}
+                  — the log only helps if a bad week is readable afterwards
+                </span>
+              )}
             </p>
           </div>
           <div className="rounded-lg border border-border bg-background/50 p-3.5">

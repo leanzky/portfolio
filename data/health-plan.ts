@@ -100,9 +100,14 @@ export const profile = {
   goal6MonthKg: 108,
   /** Weekly rate that is fast enough to see and slow enough to keep. */
   weeklyLossKg: 0.5,
-  /** Home readings, not clinic. Your doctor sets the real target — confirm it. */
-  homeBpTarget: { systolic: 135, diastolic: 85 },
   medication: "Veztenor (amlodipine + losartan)",
+  /**
+   * There is no BP monitor, so nothing is logged daily. Readings come from a
+   * clinic or a pharmacy — most Mercury Drug branches and barangay health
+   * stations will take one for free or for a few pesos. Once a month is
+   * plenty, plus whenever you feel unwell.
+   */
+  bpPlan: "Checked monthly at a pharmacy or clinic, not tracked daily.",
 };
 
 /* ------------------------------------------------------------------
@@ -119,18 +124,18 @@ export const phases: Phase[] = [
     endDate: "2026-08-16",
     goal: "Start Monday with everything already in place, so day one is only about doing it.",
     changes: [
-      "Buy a digital upper-arm blood pressure monitor with the correct cuff size. At 120 kg a standard cuff is very likely too small, and a tight cuff reads falsely high — measure around your upper arm and buy a large adult cuff if it is over 32 cm. Wrist monitors are not accurate enough for this.",
       "Buy or borrow a bathroom scale that goes past 130 kg. Put it on a hard floor, not tiles that flex, and leave it in one place.",
-      "Weigh yourself Sunday morning after the toilet, before eating, in the same light clothes. That number is your baseline — write it down and do not weigh again until next Sunday.",
-      "Take your starting photos (front and side) in the app. You will not believe the change later without them.",
+      "Weigh yourself Sunday morning after the toilet, before eating, in the same light clothes. That number is your baseline — log it and do not weigh again until next Sunday.",
+      "Take your starting photos, front and side. You will not believe the change later without them.",
+      "Get one blood pressure reading somewhere with a machine — a pharmacy, the barangay health station, or your next clinic visit. Write it down. That is your before number, and you will not need another until next month.",
       "Clear the kitchen: instant noodles, canned meat, hotdog, tocino, longganisa, bouillon cubes, softdrinks. If it is in the house you will eat it at 10pm.",
       "Do one palengke run using the shopping list in the Food tab.",
-      "Walk 10 minutes on Sunday evening, easy. Just to prove the shoes work.",
+      "Walk 30 minutes on Sunday, easy pace. Just to prove the shoes and the route work.",
     ],
-    walkTarget: "One easy 10-minute walk on Sunday",
+    walkTarget: "One easy 30-minute walk on Sunday",
     strengthTarget: "None yet",
     checkpoint:
-      "A working BP monitor, a baseline weight, two photos, a stocked kitchen and no junk in the house.",
+      "A baseline weight, two photos, one blood pressure reading written down, a stocked kitchen and no junk in the house.",
   },
   {
     id: "phase-1",
@@ -141,17 +146,17 @@ export const phases: Phase[] = [
     endDate: "2026-08-30",
     goal: "Build the daily habit and cut the sodium. Do not chase weight loss yet — chase the streak.",
     changes: [
-      "Walk 10 minutes twice a day, after breakfast and after dinner. Twice short beats once long when you are starting at 120 kg — it is easier on the knees and easier to actually do.",
-      "Take your BP every morning and every evening, and log it. Two weeks of readings is what your doctor needs to see.",
-      "Cut the big five sodium sources: instant noodles, canned meat, processed meat, dried fish, and bouillon cubes or Magic Sarap. This alone can move your systolic several points.",
+      "Walk 30 minutes every day. You can already do this, so the job is not building up to it — it is doing it on the day you do not feel like it. Split it into two fifteens if that fits your day better.",
+      "Log what you ate, every day. Not to count anything — so that when a week goes badly you can look back and see why instead of guessing.",
+      "Cut the big five sodium sources: instant noodles, canned meat, processed meat, dried fish, and bouillon cubes or Magic Sarap. This is the fastest lever you have on blood pressure.",
       "Three meals a day, no skipping. Skipping leads to a 9pm binge, every time.",
       "Measure your rice. One cup cooked per meal, using an actual cup, not a serving spoon.",
       "Strength work twice a week — Workout A, two rounds. Fifteen minutes.",
     ],
-    walkTarget: "10 min × 2 daily",
+    walkTarget: "30 min daily",
     strengthTarget: "Workout A, twice a week",
     checkpoint:
-      "Fourteen days of BP readings, a walking habit that survived a rainy day, and no instant noodles in the house.",
+      "Fourteen days logged, a walking habit that survived a rainy day, and no instant noodles in the house.",
   },
   {
     id: "phase-2",
@@ -162,17 +167,17 @@ export const phases: Phase[] = [
     endDate: "2026-09-27",
     goal: "Lengthen the walks, add the second strength session, and get the plate right at every meal.",
     changes: [
-      "Walk 20–25 minutes once a day, or keep it as two walks if that suits your day better. Pace where you can talk in sentences but not sing.",
-      "Half your plate is vegetables at lunch and dinner. This is the single highest-value food change after sodium.",
+      "Walk 45 minutes daily, or 30 minutes plus a brisk 15 later. Pace where you can talk in sentences but not sing.",
+      "Half your plate is vegetables at lunch and dinner whenever gulay is available — and when it is not, use the fallbacks in the Food tab rather than treating it as a lost day.",
       "Protein at breakfast — eggs, tokwa, or fish. It is what stops the 3pm hunger that ends in a bakery.",
       "Strength three times a week now, alternating Workout A and Workout B.",
-      "BP drops to three mornings a week once you have two clean weeks logged, unless your doctor wants daily.",
+      "Get one blood pressure reading this month at a pharmacy or clinic. Write it next to your weight for that week.",
       "Five minutes of slow breathing before bed. Six breaths a minute, in through the nose. Small effect, free, and it helps you sleep.",
     ],
-    walkTarget: "20–25 min daily",
+    walkTarget: "45 min daily",
     strengthTarget: "Workouts A and B, three times a week",
     checkpoint:
-      "About 2–3 kg down, walks that no longer feel like a task, and a morning BP average you can compare to week 1.",
+      "About 2–3 kg down, walks that no longer feel like a task, and a food log you can actually read back.",
   },
   {
     id: "phase-3",
@@ -183,13 +188,13 @@ export const phases: Phase[] = [
     endDate: "2026-10-25",
     goal: "Make it survive real life — fiestas, handaan, bad weeks, and eating out.",
     changes: [
-      "Walk 30–40 minutes daily, or 20 minutes twice. Add a small hill or a slightly faster ten minutes in the middle.",
+      "Walk an hour daily, or 45 minutes with a faster ten in the middle. Add a small hill if your route has one.",
       "Strength stays three times a week, but the reps go up and the rest goes down.",
       "Learn the three eating-out moves in the Food tab and use them at the next handaan rather than avoiding the handaan.",
-      "One planned free meal a week. Planned, eaten slowly, then straight back. This is what stops the all-or-nothing collapse.",
+      "One planned free meal a week. Planned, eaten slowly, logged like any other, then straight back. This is what stops the all-or-nothing collapse.",
       "Book your doctor's appointment for week 11 or 12 now, while slots exist.",
     ],
-    walkTarget: "30–40 min daily",
+    walkTarget: "60 min daily",
     strengthTarget: "Three times a week, progressed",
     checkpoint:
       "About 5–6 kg down, a fiesta survived without abandoning the plan, and an appointment in the calendar.",
@@ -205,12 +210,13 @@ export const phases: Phase[] = [
     changes: [
       "Keep everything exactly as it is. Nothing new in the last two weeks.",
       "Take your progress photos again, in the same spot, same light, same clothes as day one.",
-      "Print or screenshot your BP averages and your weight chart and bring them to the appointment.",
+      "Export your log as a spreadsheet and bring it, with your weight chart, to the appointment.",
+      "Have your blood pressure taken at the visit and compare it to the reading you wrote down in the prep weekend. That is your twelve-week answer.",
       "Ask about the medication. If your BP has come down, your doctor may want to adjust the dose — that decision is theirs, never yours.",
       "Ask for repeat labs: kidney function, potassium, sugar, cholesterol.",
       "Then set the next block: the six-month target is 108 kg.",
     ],
-    walkTarget: "30–40 min daily, maintained",
+    walkTarget: "60 min daily, maintained",
     strengthTarget: "Three times a week, maintained",
     checkpoint:
       "A doctor's visit backed by twelve weeks of your own data, and a decision about what comes next.",
@@ -222,12 +228,6 @@ export const phases: Phase[] = [
 ------------------------------------------------------------------ */
 
 export const dailyRhythm: { time: string; what: string; detail: string }[] = [
-  {
-    time: "On waking",
-    what: "Blood pressure, before coffee",
-    detail:
-      "Sit for five minutes first, back supported, feet flat. Take it before your medicine and before coffee, then log it.",
-  },
   {
     time: "Morning",
     what: "Medicine, same time every day",
@@ -267,8 +267,51 @@ export const dailyRhythm: { time: string; what: string; detail: string }[] = [
   },
   {
     time: "Before bed",
-    what: "Evening BP, then five minutes of slow breathing",
-    detail: "Log it, then six slow breaths a minute for five minutes. Lights out at a consistent hour.",
+    what: "Log the day, then five minutes of slow breathing",
+    detail:
+      "Fill in what you ate and how long you walked while you still remember it. Then six slow breaths a minute for five minutes, and lights out at a consistent hour.",
+  },
+];
+
+/**
+ * Gulay is not always available, and a plan that falls apart on those days is
+ * not a plan. These are ordered by how well they keep.
+ */
+export const whenNoGulay: { option: string; detail: string }[] = [
+  {
+    option: "Monggo — keep a kilo in the house permanently",
+    detail:
+      "Dried mung beans keep for months, cost very little, and cook into a full meal with nothing but garlic and onion. If there is no gulay in the market, there is still monggo in the cupboard. This is the single best fallback on the list.",
+  },
+  {
+    option: "Eggs and tokwa",
+    detail:
+      "Always available, always cheap. Two eggs with tomato and onion is a complete meal. Tokwa keeps a few days and fries or stews into anything.",
+  },
+  {
+    option: "Malunggay from any yard",
+    detail:
+      "It grows everywhere and half the neighbourhood has a tree. A handful thrown into monggo, soup or scrambled eggs costs nothing and is one of the most nutritious leaves you can get.",
+  },
+  {
+    option: "Canned or frozen vegetables",
+    detail:
+      "Frozen mixed vegetables and canned corn or mushrooms are genuinely fine — nutritionally close to fresh. Drain and rinse canned ones to wash off some of the salt.",
+  },
+  {
+    option: "Tomatoes, onions, garlic, ginger",
+    detail:
+      "These keep for a week or more and are almost always in stock. Not a full serving of gulay, but they carry a meal and add real nutrition.",
+  },
+  {
+    option: "Kamote and its tops",
+    detail:
+      "The root keeps for weeks and the leaves (talbos ng kamote) are a proper leafy vegetable, usually cheaper than anything else in the market.",
+  },
+  {
+    option: "If there is genuinely nothing",
+    detail:
+      "Then keep rice to one cup, put the protein on the plate, and move on. A day without vegetables is a day without vegetables — it is not a reason to abandon the rest. Log it honestly and look at the week rather than the day.",
   },
 ];
 
@@ -600,13 +643,13 @@ export const eatingOut: { situation: string; move: string }[] = [
 ------------------------------------------------------------------ */
 
 export const bpTechnique: string[] = [
-  "Do not drink coffee, smoke, or exercise in the thirty minutes before. Empty your bladder first — a full bladder can add 10 points.",
-  "Sit for five full minutes doing nothing before you press the button. This is the step everybody skips and it is the one that matters most.",
-  "Sit with your back supported, both feet flat on the floor, legs uncrossed.",
-  "Bare arm, resting on a table so the cuff is level with your heart. The cuff goes on the upper arm, about two fingers above the elbow crease, snug enough for one finger underneath.",
-  "Do not talk during the reading. Talking adds several points.",
-  "Take two readings a minute apart and record the second one. If they differ by a lot, take a third and record the average of the last two.",
-  "Use the same arm every time. If your two arms read differently, use the higher one from now on.",
+  "You are not tracking this daily, so make the occasional reading a good one. Once a month is enough, plus any time you feel unwell.",
+  "Where to get it: most Mercury Drug and other pharmacy branches will take it, the barangay health station will, and so will any clinic visit. It costs nothing or almost nothing.",
+  "Sit for five full minutes doing nothing first. This is the step everybody skips and it is the one that matters most.",
+  "No coffee, no cigarette, no walking in the thirty minutes before, and empty your bladder — a full one can add ten points.",
+  "Sit with your back supported, feet flat, legs uncrossed, arm resting so the cuff is level with your heart. Do not talk during the reading.",
+  "Ask for two readings a minute apart and write down the second. Use the same arm each time.",
+  "Write it in the notes for that day in this app, with the date. Three or four readings over twelve weeks is a real trend to show your doctor.",
 ];
 
 export const bpCategories: { label: string; range: string; tone: "good" | "warning" | "serious" | "critical"; meaning: string }[] = [
@@ -742,7 +785,7 @@ export const milestones: Milestone[] = [
 export const truths: string[] = [
   "Weight does not fall in a line. It goes down, flattens for ten days, then drops again. The flat stretch is the normal part, not the failure part.",
   "Salt, a heavy meal, poor sleep and amlodipine's ankle swelling can each move the scale a kilo or two overnight. That is water, not fat. This is exactly why you weigh weekly, not daily.",
-  "Blood pressure is noisy. One high reading means nothing. The weekly average is the number that means something.",
+  "Blood pressure is noisy. One reading on one afternoon means very little — what means something is this month's reading next to last month's, which is why once a month at the pharmacy is enough.",
   "Missing a day is a day. Missing a day and then quitting is the actual risk, and it is the only failure mode that matters.",
   "You cannot out-walk a bad kitchen. Food is most of the weight; walking is most of the blood pressure. You need both, but do not expect exercise alone to do it.",
   "Twelve weeks is not the plan. Twelve weeks is the first block of a plan you will run for years — that is why nothing here is extreme enough to need willpower.",

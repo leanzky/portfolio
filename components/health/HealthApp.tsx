@@ -2,17 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ensureAnonymousSession } from "@/lib/supabase-client";
 import { fetchHealthDays, saveHealthDay } from "@/lib/health/actions";
 import { fetchProgressPhotos } from "@/lib/health/photos";
 import { downloadCsv, fetchStorageUsage, type StorageUsage } from "@/lib/health/export";
 import type { HealthDayInput, HealthDayRow } from "@/lib/health/types";
 import type { ProgressPhoto } from "@/lib/health/types";
-import { buildDashboard, bpSeries, toDateKey, weightSeries } from "@/lib/health/metrics";
-import { lock } from "@/lib/private-gate";
+import { buildDashboard, toDateKey, weightSeries } from "@/lib/health/metrics";
+import { signOut } from "@/lib/health/auth";
 import { Dashboard } from "./Dashboard";
 import { TodayView } from "./TodayView";
-import { BloodPressureChart, ReadingsTable, WeightChart } from "./TrendCharts";
+import { ReadingsTable, WalkChart, WeightChart } from "./TrendCharts";
 import { PhotoTracker } from "./PhotoTracker";
 import { EatView, MoveView, PlanView, SafetyView } from "./PlanViews";
 
@@ -60,13 +59,10 @@ export function HealthApp() {
     let cancelled = false;
 
     (async () => {
-      // The sign-in call throws rather than returning an error when the
-      // network is unreachable, so it has to be inside the try — otherwise
-      // an offline phone sits on "Loading…" forever.
+      // Errors are caught rather than allowed to escape: an unreachable
+      // network throws here, and without the catch an offline phone sits on
+      // "Loading…" forever.
       try {
-        const userId = await ensureAnonymousSession();
-        if (!userId) throw new Error("Could not start a session.");
-
         const data = await fetchHealthDays();
         if (cancelled) return;
         setDays(data);
@@ -100,7 +96,13 @@ export function HealthApp() {
   );
   const dashboard = useMemo(() => buildDashboard(days, todayKey), [days, todayKey]);
   const weights = useMemo(() => weightSeries(sorted), [sorted]);
-  const bp = useMemo(() => bpSeries(sorted), [sorted]);
+  const walks = useMemo(
+    () =>
+      sorted
+        .filter((day) => day.walk_minutes > 0)
+        .map((day) => ({ date: day.log_date, value: day.walk_minutes })),
+    [sorted]
+  );
   const tableRows = useMemo(
     () =>
       [...sorted]
@@ -108,9 +110,10 @@ export function HealthApp() {
         .slice(0, 10)
         .map((day) => ({
           date: day.log_date,
-          systolic: day.systolic,
-          diastolic: day.diastolic,
           weight: day.weight_kg,
+          walk: day.walk_minutes,
+          strength: day.strength_done,
+          ate: [day.breakfast, day.lunch, day.dinner].filter(Boolean).join(" · ") || null,
         })),
     [sorted]
   );
@@ -120,9 +123,9 @@ export function HealthApp() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight">Blood pressure & weight</p>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
-              Week {dashboard.week || "—"} of 12
+            <p className="truncate text-sm font-semibold tracking-tight">Another Chance of Health</p>
+            <p className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-muted">
+              {dashboard.week > 0 ? `Week ${dashboard.week} of 12` : "Health tracker"}
             </p>
           </div>
           {/* Touch targets: 44px minimum, which is why these have padding
@@ -136,10 +139,10 @@ export function HealthApp() {
             </Link>
             <button
               type="button"
-              onClick={lock}
+              onClick={signOut}
               className="flex min-h-11 items-center px-3 text-xs text-muted transition-colors hover:text-foreground"
             >
-              Lock
+              Sign out
             </button>
           </div>
         </div>
@@ -239,9 +242,9 @@ export function HealthApp() {
                 </div>
               </div>
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">Blood pressure</h2>
+                <h2 className="text-lg font-semibold tracking-tight">Walking</h2>
                 <div className="mt-3">
-                  <BloodPressureChart systolic={bp.systolic} diastolic={bp.diastolic} />
+                  <WalkChart points={walks} />
                 </div>
               </div>
               <ReadingsTable rows={tableRows} />

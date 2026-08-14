@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { dailyRhythm, exercises, workouts } from "@/data/health-plan";
-import { classifyBp, BP_TONE_CLASS, phaseFor, phaseIndex, formatDate } from "@/lib/health/metrics";
+import { phaseFor, phaseIndex, formatDate } from "@/lib/health/metrics";
 import type { HealthDayInput, HealthDayRow } from "@/lib/health/types";
 
-/** Strength days: Mon/Wed/Fri (0 = Sunday). */
-function workoutForDay(dateKey: string) {
+/** Strength days: Mon/Wed/Fri (0 = Sunday). Nothing during the setup
+    weekend — phase 0 is shopping and a baseline weigh-in, not training. */
+function workoutForDay(dateKey: string, phaseNumber: string) {
+  if (phaseNumber === "0") return null;
   const day = new Date(dateKey + "T00:00:00").getDay();
   if (day === 1 || day === 5) return workouts[0];
   if (day === 3) return workouts[1];
@@ -44,6 +46,33 @@ function NumberField({
         />
         {suffix && <span className="shrink-0 text-xs text-muted">{suffix}</span>}
       </span>
+    </label>
+  );
+}
+
+function MealField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 focus-within:border-foreground/40">
+      <span className="w-20 shrink-0 text-xs font-medium text-muted">{label}</span>
+      <input
+        type="text"
+        value={value}
+        maxLength={500}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        // text-base keeps iOS from zooming the page on focus.
+        className="min-h-12 w-full bg-transparent text-base outline-none placeholder:text-muted/50"
+      />
     </label>
   );
 }
@@ -156,10 +185,12 @@ export function TodayView({
   const text = (value: number | null | undefined) => (value != null ? String(value) : "");
 
   const [weight, setWeight] = useState(() => text(row?.weight_kg));
-  const [systolic, setSystolic] = useState(() => text(row?.systolic));
-  const [diastolic, setDiastolic] = useState(() => text(row?.diastolic));
-  const [pulse, setPulse] = useState(() => text(row?.pulse));
   const [walk, setWalk] = useState(() => (row?.walk_minutes ? String(row.walk_minutes) : ""));
+  const [rice, setRice] = useState(() => text(row?.rice_cups));
+  const [breakfast, setBreakfast] = useState(() => row?.breakfast ?? "");
+  const [lunch, setLunch] = useState(() => row?.lunch ?? "");
+  const [dinner, setDinner] = useState(() => row?.dinner ?? "");
+  const [snacks, setSnacks] = useState(() => row?.snacks ?? "");
   const [sleep, setSleep] = useState(() => text(row?.sleep_hours));
   const [strength, setStrength] = useState(() => row?.strength_done ?? false);
   const [meds, setMeds] = useState(() => row?.meds_taken ?? false);
@@ -170,28 +201,28 @@ export function TodayView({
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const phase = phaseFor(dateKey);
-  const workout = workoutForDay(dateKey);
+  const workout = workoutForDay(dateKey, phase.number);
   const index = phaseIndex(dateKey);
 
   const num = (value: string) => (value.trim() === "" ? null : Number(value));
-  const sys = num(systolic);
-  const dia = num(diastolic);
-  const preview = sys !== null && dia !== null ? classifyBp(sys, dia) : null;
+  const trimmed = (value: string) => (value.trim() === "" ? null : value.trim());
 
   async function save() {
     await onSave({
       weight_kg: num(weight),
-      systolic: sys,
-      diastolic: dia,
-      pulse: num(pulse),
       walk_minutes: Number(walk || 0),
       sleep_hours: num(sleep),
+      rice_cups: num(rice),
+      breakfast: trimmed(breakfast),
+      lunch: trimmed(lunch),
+      dinner: trimmed(dinner),
+      snacks: trimmed(snacks),
       strength_done: strength,
       meds_taken: meds,
       salty_slip: slip,
       veg_servings: veg,
       water_glasses: water,
-      notes: notes.trim() === "" ? null : notes.trim(),
+      notes: trimmed(notes),
     });
     setSavedAt(new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }));
   }
@@ -248,23 +279,6 @@ export function TodayView({
         <div className="mt-5 space-y-5">
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
-              Blood pressure
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              <NumberField label="Systolic" value={systolic} onChange={setSystolic} placeholder="130" />
-              <NumberField label="Diastolic" value={diastolic} onChange={setDiastolic} placeholder="85" />
-              <NumberField label="Pulse" value={pulse} onChange={setPulse} placeholder="72" />
-            </div>
-            {preview && (
-              <div className={`mt-3 rounded-lg border px-4 py-3 text-sm ${BP_TONE_CLASS[preview.tone]}`}>
-                <span className="font-semibold">{preview.label}</span>
-                <span className="ml-2 text-foreground/75">{preview.meaning}</span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
               Weight, walking, sleep
             </p>
             <div className="grid grid-cols-3 gap-3">
@@ -276,12 +290,40 @@ export function TodayView({
                 step="0.1"
                 placeholder="120.0"
               />
-              <NumberField label="Walked" value={walk} onChange={setWalk} suffix="min" placeholder="20" />
+              <NumberField label="Walked" value={walk} onChange={setWalk} suffix="min" placeholder="30" />
               <NumberField label="Slept" value={sleep} onChange={setSleep} suffix="hrs" step="0.5" placeholder="7" />
             </div>
             <p className="mt-2 text-xs text-muted">
               Weigh once a week, Sunday morning, after the toilet and before eating. Daily weighing
               measures water, not fat.
+            </p>
+          </div>
+
+          {/* The food log. Free text on purpose — anything that needs a
+              database lookup per item does not get filled in on a phone. */}
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
+              What you ate
+            </p>
+            <div className="space-y-2.5">
+              <MealField label="Breakfast" value={breakfast} onChange={setBreakfast} placeholder="2 eggs, 1 cup rice, kape" />
+              <MealField label="Lunch" value={lunch} onChange={setLunch} placeholder="Inihaw na tilapia, kangkong, 1 cup rice" />
+              <MealField label="Dinner" value={dinner} onChange={setDinner} placeholder="Monggo with malunggay, 1 cup rice" />
+              <MealField label="Snacks" value={snacks} onChange={setSnacks} placeholder="Saba, peanuts" />
+            </div>
+            <div className="mt-3 max-w-[10rem]">
+              <NumberField
+                label="Rice today"
+                value={rice}
+                onChange={setRice}
+                suffix="cups"
+                step="0.5"
+                placeholder="3"
+              />
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Write it plainly — no counting, no weighing. The point is that a bad week is
+              explainable afterwards instead of a mystery.
             </p>
           </div>
 

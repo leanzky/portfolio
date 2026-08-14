@@ -8,7 +8,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Blood pressure & weight | Leandro Francia",
+  title: "Another Chance of Health | Health Tracker",
   description: "Private health log and 12-week plan.",
   // Personal health data — never in search results.
   robots: { index: false, follow: false },

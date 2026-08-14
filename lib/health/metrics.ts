@@ -1,4 +1,4 @@
-import { bpCategories, milestones, phases, profile } from "@/data/health-plan";
+import { milestones, phases, profile } from "@/data/health-plan";
 import type { HealthDayRow } from "./types";
 
 /* ---------- dates ---------- */
@@ -43,7 +43,10 @@ export function programWeek(dateKey: string): number {
 
 export function phaseFor(dateKey: string) {
   if (dateKey < profile.startDate) return phases[0];
-  return phases.find((phase) => dateKey >= phase.startDate && dateKey <= phase.endDate) ?? phases[phases.length - 1];
+  return (
+    phases.find((phase) => dateKey >= phase.startDate && dateKey <= phase.endDate) ??
+    phases[phases.length - 1]
+  );
 }
 
 /** 0-based index into a Workout's four-phase prescription array. */
@@ -70,24 +73,6 @@ export function bmiLabel(value: number): string {
   return "Obesity class III";
 }
 
-/* ---------- blood pressure ---------- */
-
-/** Classify by the worse of the two numbers, which is the standard rule. */
-export function classifyBp(systolic: number, diastolic: number) {
-  if (systolic >= 180 || diastolic >= 120) return bpCategories[4];
-  if (systolic >= 160 || diastolic >= 100) return bpCategories[3];
-  if (systolic >= 135 || diastolic >= 85) return bpCategories[2];
-  if (systolic >= 130 || diastolic >= 80) return bpCategories[1];
-  return bpCategories[0];
-}
-
-export const BP_TONE_CLASS: Record<"good" | "warning" | "serious" | "critical", string> = {
-  good: "text-[#0ca30c] border-[#0ca30c]/40 bg-[#0ca30c]/10",
-  warning: "text-[#a06f00] border-[#fab219]/50 bg-[#fab219]/10",
-  serious: "text-[#b4552b] border-[#ec835a]/50 bg-[#ec835a]/10",
-  critical: "text-[#d03b3b] border-[#d03b3b]/50 bg-[#d03b3b]/10",
-};
-
 /* ---------- series and summaries ---------- */
 
 export type Point = { date: string; value: number };
@@ -96,22 +81,6 @@ export function weightSeries(days: HealthDayRow[]): Point[] {
   return days
     .filter((day) => day.weight_kg !== null)
     .map((day) => ({ date: day.log_date, value: Number(day.weight_kg) }));
-}
-
-export function bpSeries(days: HealthDayRow[]): { systolic: Point[]; diastolic: Point[] } {
-  const withBp = days.filter((day) => day.systolic !== null && day.diastolic !== null);
-  return {
-    systolic: withBp.map((day) => ({ date: day.log_date, value: Number(day.systolic) })),
-    diastolic: withBp.map((day) => ({ date: day.log_date, value: Number(day.diastolic) })),
-  };
-}
-
-/** Mean of the last n readings — the number that actually means something,
-    since a single blood pressure reading is mostly noise. */
-export function recentAverage(points: Point[], count = 7): number | null {
-  if (points.length === 0) return null;
-  const slice = points.slice(-count);
-  return slice.reduce((total, point) => total + point.value, 0) / slice.length;
 }
 
 /** Consecutive days ending today (or yesterday, so an unlogged today does
@@ -143,13 +112,12 @@ export type Dashboard = {
   startBmi: number;
   toGoalKg: number | null;
   goalPercent: number;
-  latestBp: { systolic: number; diastolic: number; date: string } | null;
-  bpAverage: { systolic: number; diastolic: number; count: number } | null;
-  bpChange: number | null;
   streak: number;
   daysLogged: number;
   walkMinutesThisWeek: number;
+  walkDaysThisWeek: number;
   strengthThisWeek: number;
+  mealsLoggedThisWeek: number;
   week: number;
 };
 
@@ -159,20 +127,12 @@ export function buildDashboard(
 ): Dashboard {
   const days = Object.values(byDate).sort((a, b) => a.log_date.localeCompare(b.log_date));
   const weights = weightSeries(days);
-  const { systolic, diastolic } = bpSeries(days);
 
   const currentWeight = weights.length > 0 ? weights[weights.length - 1].value : null;
   const startWeight = weights.length > 0 ? weights[0].value : profile.startWeightKg;
 
   const lostKg = currentWeight === null ? null : startWeight - currentWeight;
   const goalTotal = profile.startWeightKg - profile.goal12WeekKg;
-
-  const sysAvg = recentAverage(systolic);
-  const diaAvg = recentAverage(diastolic);
-
-  // First week of readings versus the last, so the comparison is like for like.
-  const firstSys = systolic.slice(0, 7);
-  const firstAvg = firstSys.length > 0 ? recentAverage(firstSys, firstSys.length) : null;
 
   const weekStart = addDays(todayKey, -6);
   const thisWeek = days.filter((day) => day.log_date >= weekStart && day.log_date <= todayKey);
@@ -187,23 +147,14 @@ export function buildDashboard(
     toGoalKg: currentWeight === null ? null : currentWeight - profile.goal12WeekKg,
     goalPercent:
       lostKg === null || goalTotal <= 0 ? 0 : Math.max(0, Math.min(100, (lostKg / goalTotal) * 100)),
-    latestBp:
-      systolic.length > 0
-        ? {
-            systolic: systolic[systolic.length - 1].value,
-            diastolic: diastolic[diastolic.length - 1].value,
-            date: systolic[systolic.length - 1].date,
-          }
-        : null,
-    bpAverage:
-      sysAvg !== null && diaAvg !== null
-        ? { systolic: sysAvg, diastolic: diaAvg, count: Math.min(7, systolic.length) }
-        : null,
-    bpChange: sysAvg !== null && firstAvg !== null && systolic.length >= 8 ? sysAvg - firstAvg : null,
     streak: currentStreak(byDate, todayKey),
     daysLogged: days.length,
     walkMinutesThisWeek: thisWeek.reduce((total, day) => total + day.walk_minutes, 0),
+    walkDaysThisWeek: thisWeek.filter((day) => day.walk_minutes > 0).length,
     strengthThisWeek: thisWeek.filter((day) => day.strength_done).length,
+    mealsLoggedThisWeek: thisWeek.filter(
+      (day) => day.breakfast || day.lunch || day.dinner || day.snacks
+    ).length,
     week: programWeek(todayKey),
   };
 }
