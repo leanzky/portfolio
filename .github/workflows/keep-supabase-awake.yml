@@ -1,0 +1,56 @@
+# Supabase pauses a free project after about a week with no activity, and
+# unpausing is a manual click in the dashboard. This makes one real database
+# query every three days so the project never goes idle.
+#
+# Setup (once): in the repo's Settings -> Secrets and variables -> Actions,
+# add two secrets:
+#   SUPABASE_URL       https://<project-ref>.supabase.co
+#   SUPABASE_ANON_KEY  the publishable/anon key (the same one the site uses)
+#
+# The anon key is safe to expose — it is protected by RLS, not by secrecy —
+# but it lives in a secret here anyway so a public repo does not advertise it.
+#
+# Note: GitHub disables scheduled workflows in a repository with no activity
+# for 60 days. If this ever stops firing, push a commit or press "Run workflow"
+# and it resumes.
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # 06:00 UTC = 14:00 in Manila, every third day.
+    - cron: "0 6 */3 * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL and SUPABASE_ANON_KEY repository secrets are not set."
+            exit 1
+          fi
+
+          # A real table read, not just a health endpoint — the point is to
+          # touch Postgres. RLS returns an empty array for an unauthenticated
+          # caller, which is a successful query and exactly what we want.
+          status=$(curl -sS -o /tmp/body.txt -w "%{http_code}" \
+            "$SUPABASE_URL/rest/v1/health_days?select=log_date&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+
+          echo "HTTP $status"
+          head -c 300 /tmp/body.txt
+
+          # 2xx means the database answered. Anything else — including a
+          # paused project — should fail loudly so the run notifies you.
+          case "$status" in
+            2*) echo "Project is awake." ;;
+            *)  echo "::error::Unexpected status $status — the project may be paused or the secrets may be wrong."
+                exit 1 ;;
+          esac

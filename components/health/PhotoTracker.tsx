@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { POSES, type Pose, type ProgressPhoto } from "@/lib/health/types";
 import { deleteProgressPhoto, uploadProgressPhoto } from "@/lib/health/photos";
 import { formatDate } from "@/lib/health/metrics";
+import { formatBytes, type StorageUsage } from "@/lib/health/export";
 
 /**
  * Progress photos.
@@ -18,11 +19,13 @@ export function PhotoTracker({
   photos,
   todayKey,
   todayWeight,
+  usage,
   onChanged,
 }: {
   photos: ProgressPhoto[];
   todayKey: string;
   todayWeight: number | null;
+  usage: StorageUsage | null;
   onChanged: () => Promise<void>;
 }) {
   const [pose, setPose] = useState<Pose>("front");
@@ -158,6 +161,18 @@ export function PhotoTracker({
             displayed through links that expire within the hour. They are never public.
           </p>
         </div>
+
+        {/* Space used, so "will the free tier fill up?" is a number rather
+            than a worry. Every photo is downscaled to 1280px before upload. */}
+        {usage && usage.photoCount > 0 && (
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            <span className="font-medium text-foreground/70">Storage used: </span>
+            {formatBytes(usage.totalBytes)} across {usage.photoCount}{" "}
+            {usage.photoCount === 1 ? "photo" : "photos"} — about{" "}
+            {formatBytes(usage.averageBytes)} each. At one set of three photos a month that is
+            roughly {formatBytes(usage.averageBytes * 36)} a year.
+          </p>
+        )}
       </div>
 
       {/* ---------- then and now ---------- */}

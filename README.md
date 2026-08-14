@@ -334,6 +334,20 @@ Two React details worth keeping:
 - The check-in form seeds its state from the saved row at mount and is **remounted via `key`** when the day changes or the row first loads — not synced with an effect, which trips this project's React Compiler lint rule and would also wipe half-typed input on every refetch. The key deliberately excludes `updated_at`, so saving does not reset the form under you.
 - Sign-in is inside the `try`: `signInAnonymously` *throws* rather than returning an error when the network is unreachable, and without that the page sat on "Loading…" forever offline. It now shows the error state with the migration hint, and the plan, exercise, food and safety tabs stay readable with no database at all.
 
+### Keeping the free Supabase project awake
+
+A free Supabase project pauses after about a week with no activity, and unpausing is a manual click. [`.github/workflows/keep-supabase-awake.yml`](.github/workflows/keep-supabase-awake.yml) makes one real table query every three days so it never goes idle.
+
+**One-time setup:** add two repository secrets under Settings → Secrets and variables → Actions — `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The anon key is safe to expose (RLS protects the data, not secrecy) but it lives in a secret so a public repo does not advertise it. Trigger the workflow manually once to confirm it returns 200.
+
+Two caveats: the ping deliberately queries `health_days` rather than a health endpoint, because the point is to touch Postgres, and GitHub disables scheduled workflows in a repo with 60 days of no activity — push a commit or press "Run workflow" to resume. In practice, once the tracker is used daily it generates its own activity and the cron is only covering the gaps.
+
+### Will the storage fill up?
+
+No, and the page shows you rather than telling you. Photos are downscaled to 1280px JPEG before upload, which lands around 230 KB each — the Progress tab displays live usage and projects a year at that rate (one set of three photos a month is roughly 8 MB). The daily rows are text: a full year is well under a megabyte.
+
+`Export CSV` on the Progress tab downloads every reading as a spreadsheet. It exists for two reasons: it is the most useful thing to hand a doctor at the week 11 appointment, and it means months of readings never depend on one vendor's free tier staying free.
+
 ### Built for a phone
 
 This page is used one-handed, in the morning, on a phone — so the mobile rules here are requirements, not polish:

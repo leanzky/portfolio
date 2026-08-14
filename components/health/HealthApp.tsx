@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ensureAnonymousSession } from "@/lib/supabase-client";
 import { fetchHealthDays, saveHealthDay } from "@/lib/health/actions";
 import { fetchProgressPhotos } from "@/lib/health/photos";
+import { downloadCsv, fetchStorageUsage, type StorageUsage } from "@/lib/health/export";
 import type { HealthDayInput, HealthDayRow } from "@/lib/health/types";
 import type { ProgressPhoto } from "@/lib/health/types";
 import { buildDashboard, bpSeries, toDateKey, weightSeries } from "@/lib/health/metrics";
@@ -35,6 +36,7 @@ export function HealthApp() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [days, setDays] = useState<Record<string, HealthDayRow>>({});
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [usage, setUsage] = useState<StorageUsage | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable" | "error">(
     configured ? "loading" : "unavailable"
   );
@@ -45,7 +47,9 @@ export function HealthApp() {
 
   const loadPhotos = useCallback(async () => {
     try {
-      setPhotos(await fetchProgressPhotos());
+      const [rows, storage] = await Promise.all([fetchProgressPhotos(), fetchStorageUsage()]);
+      setPhotos(rows);
+      setUsage(storage);
     } catch {
       // Photos are a bonus; a missing bucket must not take the page down.
     }
@@ -241,6 +245,26 @@ export function HealthApp() {
                 </div>
               </div>
               <ReadingsTable rows={tableRows} />
+
+              {/* Your data, in a file you own. Also the most useful thing to
+                  put in front of a doctor at the week 11 appointment. */}
+              <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-5">
+                <button
+                  type="button"
+                  onClick={() => downloadCsv(sorted)}
+                  disabled={sorted.length === 0}
+                  className="min-h-11 rounded-lg border border-border px-4 text-sm font-medium transition hover:border-foreground/40 disabled:opacity-50"
+                >
+                  Export CSV
+                </button>
+                <p className="min-w-0 flex-1 text-xs leading-relaxed text-muted">
+                  Downloads every reading as a spreadsheet — {sorted.length}{" "}
+                  {sorted.length === 1 ? "day" : "days"} so far. Worth doing before your
+                  appointment, and worth keeping a copy so months of readings never depend on one
+                  service staying free.
+                </p>
+              </div>
+
               <div className="border-t border-border pt-6">
                 <h2 className="text-lg font-semibold tracking-tight">Photos</h2>
                 <div className="mt-3">
@@ -248,6 +272,7 @@ export function HealthApp() {
                     photos={photos}
                     todayKey={todayKey}
                     todayWeight={days[todayKey]?.weight_kg ?? dashboard.currentWeight}
+                    usage={usage}
                     onChanged={loadPhotos}
                   />
                 </div>
