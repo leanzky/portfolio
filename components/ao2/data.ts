@@ -878,3 +878,207 @@ export const allTables: TableDef[] = [
   appointmentTypes,
   leaveTable,
 ];
+
+/* ============================================================
+   PRACTICE QUIZ — one self-check pulling from every tab
+   ============================================================ */
+
+export type QuizQuestion = {
+  id: string;
+  question: string;
+  choices: string[];
+  /** Index into choices. */
+  correct: number;
+  explanation: string;
+};
+
+export const quizQuestions: QuizQuestion[] = [
+  {
+    id: "q1",
+    question: "Of the 100 points in the ranking, how many are decided on the assessment day itself?",
+    choices: ["10", "15", "20", "25"],
+    correct: 2,
+    explanation: "Potential — the written test, the behavioural event interview, and the work sample together — is worth 20 points. Everything else is already settled by the papers in your folder.",
+  },
+  {
+    id: "q2",
+    question: "Which document routes an existing letter or report to another office with a brief comment or instruction, rather than restating it?",
+    choices: ["Memorandum", "Official letter", "Indorsement", "Certification"],
+    correct: 2,
+    explanation: "A memorandum instructs within an office and a letter communicates outside it; an indorsement routes an existing document onward, attached, with a short instruction such as \"for appropriate action.\"",
+  },
+  {
+    id: "q3",
+    question: "Which COA issuance governs the granting, utilisation, and liquidation of cash advances?",
+    choices: ["COA Circular 2012-001", "COA Circular 97-002", "RA 9184", "Presidential Decree 1445"],
+    correct: 1,
+    explanation: "COA Circular 97-002 governs cash advances specifically. COA Circular 2012-001 is the one behind the documentary requirements used to build the disbursement voucher template — a related but different issuance.",
+  },
+  {
+    id: "q4",
+    question: "Breaking one purchase into several smaller purchase requests so each falls under a lower procurement mode is:",
+    choices: [
+      "A standard, encouraged cost-saving technique",
+      "Splitting of contracts, prohibited under procurement law",
+      "Required whenever the same supplier is used twice",
+      "Only a problem if COA finds out",
+    ],
+    correct: 1,
+    explanation: "Splitting of contracts to evade the procurement thresholds under RA 9184 is expressly prohibited — one of the most commonly tested traps in this area.",
+  },
+  {
+    id: "q5",
+    question: "Which document turns a delivery into an accountable item, and must exist before payment can be released?",
+    choices: ["Purchase Request", "Purchase Order", "Inspection and Acceptance Report", "Requisition and Issue Slip"],
+    correct: 2,
+    explanation: "The Inspection and Acceptance Report (IAR) is what confirms the goods were actually received in good order. Nothing is accepted onto the inventory, and no DV is completed, without it.",
+  },
+  {
+    id: "q6",
+    question: "What is the key difference between a Property Acknowledgement Receipt (PAR) and an Inventory Custodian Slip (ICS)?",
+    choices: [
+      "PAR is for consumables, ICS is for equipment",
+      "PAR is used above the semi-expendable threshold, ICS below it",
+      "They are two names for the same form",
+      "ICS is only used to track cash advances",
+    ],
+    correct: 1,
+    explanation: "Both track durable property assigned to a custodian; the PAR is for the higher-value, longer-life items, and the ICS is for semi-expendable property below that monetary threshold. Consumables that are used up entirely are a Requisition and Issue Slip instead.",
+  },
+  {
+    id: "q7",
+    question: "In a Disbursement Voucher, which box certifies that supporting documents are complete and cash is available?",
+    choices: ["Box A", "Box B", "Box C", "Box D"],
+    correct: 1,
+    explanation: "Box A is the requesting official certifying the expense is necessary and lawful. Box B is Budget/Accounting certifying documents and cash. Box C approves payment. Box D records receipt by the payee.",
+  },
+  {
+    id: "q8",
+    question: "Under the general CSC rule, a single promotion is generally limited to how many salary grades above an employee's current position?",
+    choices: ["One", "Two", "Three", "Five"],
+    correct: 2,
+    explanation: "The three-salary-grade rule. A jump beyond that gap needs specific justification, such as being the next-higher position in the agency's approved staffing pattern, or it risks disapproval on attestation.",
+  },
+  {
+    id: "q9",
+    question: "A next-in-rank employee who is passed over for a promotion:",
+    choices: [
+      "Has an absolute right to the position",
+      "Has priority consideration, not an automatic right, and may protest if passed over",
+      "Automatically becomes ineligible for future promotions",
+      "Must be reassigned to a different office",
+    ],
+    correct: 1,
+    explanation: "Next-in-rank gives priority consideration, not an exclusive right. The appointing authority may still choose another qualified candidate in the best interest of the service, but the passed-over employee must be told why and may protest.",
+  },
+  {
+    id: "q10",
+    question: "What is the standard probationary period for a first-time permanent appointee to the career service?",
+    choices: ["Three months", "Six months", "One year", "There is no probationary period"],
+    correct: 1,
+    explanation: "Commonly six months, during which conduct and performance are observed before the appointment is confirmed as permanent.",
+  },
+  {
+    id: "q11",
+    question: "Under RA 11210, how many days of paid maternity leave apply regardless of civil status or mode of delivery?",
+    choices: ["60 days", "90 days", "105 days", "120 days"],
+    correct: 2,
+    explanation: "105 days, with 15 additional days for a qualified solo parent and an optional 30 unpaid days on top of that.",
+  },
+  {
+    id: "q12",
+    question: "What is the minimum number of consecutive working days of unauthorised absence before an employee may be dropped from the rolls for AWOL?",
+    choices: ["5 days", "15 days", "30 days", "60 days"],
+    correct: 2,
+    explanation: "Thirty consecutive working days without approved leave. Standard due process — a show-cause notice — is still the better practice before finalising the separation.",
+  },
+  {
+    id: "q13",
+    question: "What actually distinguishes Leave Without Pay (LWOP) from Absence Without Official Leave (AWOL)?",
+    choices: [
+      "LWOP is paid and AWOL is not",
+      "LWOP is approved in advance; AWOL has no approval at all",
+      "They are the same thing under a different name",
+      "AWOL only applies to sick leave",
+    ],
+    correct: 1,
+    explanation: "LWOP is a leave category the employee applied for and had approved once VL/SL credits ran out. AWOL is unapproved absence — the absence of any application. A frequent trap question.",
+  },
+  {
+    id: "q14",
+    question: "The standard terminal leave and monetisation computation uses which constant factor?",
+    choices: ["0.5", "1.25", "0.0481927", "22"],
+    correct: 2,
+    explanation: "Highest basic monthly salary x accumulated leave credits x 0.0481927 — confirm the current rate with HRMO/accounting before quoting it as fact, since DBM issuances can update the constant.",
+  },
+  {
+    id: "q15",
+    question: "Which law governs the confidentiality of the 201 files and the personnel database an AO II maintains?",
+    choices: ["RA 9184", "RA 10173 (Data Privacy Act)", "RA 6713", "RA 9155"],
+    correct: 1,
+    explanation: "The Data Privacy Act governs lawful processing and confidentiality of personal and sensitive personal information, which is exactly what a 201 file contains.",
+  },
+  {
+    id: "q16",
+    question: "Under RA 6713, how many working days does a public official generally have to act on a letter or request?",
+    choices: ["5 working days", "10 working days", "15 working days", "30 working days"],
+    correct: 2,
+    explanation: "Fifteen working days — one of the norms of conduct under the Code of Conduct and Ethical Standards, and a likely source of straightforward ethics questions.",
+  },
+  {
+    id: "q17",
+    question: "Which law decentralises authority from the DepEd Central Office down to the school and establishes School-Based Management?",
+    choices: ["RA 9155", "RA 4670", "RA 10533", "RA 9710"],
+    correct: 0,
+    explanation: "The Governance of Basic Education Act (RA 9155). RA 4670 is the Magna Carta for Public School Teachers, RA 10533 is the K to 12 law, and RA 9710 is the Magna Carta of Women.",
+  },
+  {
+    id: "q18",
+    question: "The \"elastic clause\" that lets an AO II be assigned duties from several former positions comes from:",
+    choices: ["RA 9184", "DBM Budget Circular 2004-3", "The CSC Omnibus Rules", "COA Circular 97-002"],
+    correct: 1,
+    explanation: "DBM Budget Circular No. 2004-3 — the correct thing to cite if asked in the interview how you would handle work outside your job description.",
+  },
+  {
+    id: "q19",
+    question: "Which appointment type describes moving to a position of equivalent rank, level, or salary without a break in service?",
+    choices: ["Promotion", "Transfer", "Reinstatement", "Demotion"],
+    correct: 1,
+    explanation: "Transfer. Promotion moves to a higher salary grade; reinstatement restores someone earlier removed, following exoneration; demotion moves to a lower salary grade and generally needs written consent.",
+  },
+  {
+    id: "q20",
+    question: "In the STAR method for a behavioural interview answer, which letter stands for the concrete steps you personally took, and is usually the longest part of the answer?",
+    choices: ["S", "T", "A", "R"],
+    correct: 2,
+    explanation: "Action. Situation and Task set up the story quickly; Action is where the actual evidence of what you did lives, and Result closes it with what changed.",
+  },
+  {
+    id: "q21",
+    question: "RA 8972, as amended by RA 11861, grants which leave benefit specifically to qualified solo parents?",
+    choices: ["Special Privilege Leave", "Parental Leave, 7 working days a year", "Rehabilitation Privilege", "Adoption Leave"],
+    correct: 1,
+    explanation: "Seven working days of parental leave per year, on top of ordinary VL/SL, for an employee holding a Solo Parent Identification Card.",
+  },
+  {
+    id: "q22",
+    question: "RA 11032 primarily addresses:",
+    choices: ["Data privacy", "Government procurement", "Ease of doing business and efficient government service delivery", "Anti-graft practices"],
+    correct: 2,
+    explanation: "Ease of Doing Business and Efficient Government Service Delivery Act — prescribed processing times and the duty to cut red tape.",
+  },
+  {
+    id: "q23",
+    question: "What is the short cover note used when forwarding a batch of reports or documents to the SDO called?",
+    choices: ["Certification", "Transmittal letter", "Indorsement", "Memorandum"],
+    correct: 1,
+    explanation: "A transmittal letter. It lists what is enclosed and why — it does not summarise or restate the attached documents, which is what makes it different from a report.",
+  },
+  {
+    id: "q24",
+    question: "An officer who has physical custody of government property, and is personally answerable for it, is called under COA rules a:",
+    choices: ["Requesting official", "Accountable officer", "Appointing authority", "Head of agency"],
+    correct: 1,
+    explanation: "An accountable officer — primarily accountable if the property is entrusted directly to them, secondarily accountable if they merely approve or have access to its movement. This is the legal reason a custodian signs a PAR or ICS personally.",
+  },
+];

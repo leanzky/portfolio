@@ -18,6 +18,7 @@ import { TemplatesSection } from "./sections/Templates";
 import { LawSection } from "./sections/Law";
 import { HiringSection } from "./sections/Hiring";
 import { PackSection } from "./sections/Pack";
+import { QuizSection } from "./sections/Quiz";
 import styles from "./ao2.module.css";
 
 const TABS: { id: string; label: string; render: () => React.ReactNode }[] = [
@@ -31,6 +32,7 @@ const TABS: { id: string; label: string; render: () => React.ReactNode }[] = [
   { id: "hiring", label: "Hiring, promotion & leave", render: () => <HiringSection /> },
   { id: "law", label: "Reference shelf", render: () => <LawSection /> },
   { id: "pack", label: "Submission pack", render: () => <PackSection /> },
+  { id: "quiz", label: "Practice quiz", render: () => <QuizSection /> },
 ];
 
 export function AO2Reviewer() {
