@@ -1,0 +1,622 @@
+/* Lifted from the original AO2_Assessment_Reviewer.html and extended for
+   the templates tab. Scoped to the /ao2-reviewer route only (CSS Modules
+   only load on pages that import them), so bare element selectors like
+   h1/h2/table are safe here even though they aren't hashed. */
+
+.root {
+  --ink: #101828;
+  --navy: #1f3864;
+  --paper: #ffffff;
+  --field: #eef1f5;
+  --rule: #c6ceda;
+  --rule-soft: #e3e8ef;
+  --muted: #5a6675;
+  --stamp: #b3261e;
+  --tab-violet: #6b4e9e;
+  --tab-black: #101828;
+  --tab-green: #2e7d32;
+  --tab-blue: #1565c0;
+  --display: "Arial Narrow", "Helvetica Neue Condensed", Helvetica, Arial, sans-serif;
+  --body: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --doc: "Times New Roman", Times, serif;
+  --ui: Arial, Helvetica, sans-serif;
+
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.62;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- masthead ---------- */
+.mast {
+  border-bottom: 3px solid var(--navy);
+  padding: 34px 0 0;
+}
+.mast .wrap {
+  position: relative;
+}
+.eyebrow {
+  font-family: var(--ui);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.root h1 {
+  font-family: var(--display);
+  font-stretch: condensed;
+  font-size: clamp(38px, 7.4vw, 74px);
+  line-height: 0.95;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.sub {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 22px;
+  letter-spacing: 0.02em;
+}
+.stamp {
+  border: 2px solid var(--stamp);
+  color: var(--stamp);
+  font-family: var(--ui);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  padding: 8px 12px;
+  display: inline-block;
+  transform: rotate(-1.6deg);
+  margin: 0 0 24px;
+  line-height: 1.35;
+}
+.stamp b {
+  display: block;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- folder tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: flex-end;
+}
+.tabs li {
+  margin: 0;
+}
+.tabs button {
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule);
+  border-bottom: none;
+  background: var(--field);
+  color: var(--muted);
+  padding: 10px 15px 9px;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.tabs button:hover {
+  background: #e4e9f0;
+  color: var(--ink);
+}
+.tabs button[aria-selected="true"] {
+  background: var(--tab-black);
+  color: #fff;
+  border-color: var(--tab-black);
+  padding-top: 13px;
+}
+.tabs button:focus-visible {
+  outline: 3px solid var(--tab-blue);
+  outline-offset: 2px;
+}
+.folderline {
+  height: 3px;
+  background: var(--tab-black);
+}
+
+.otherfolders {
+  font-family: var(--ui);
+  font-size: 11px;
+  color: var(--muted);
+  padding: 10px 0 0;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- panels ---------- */
+.panel {
+  padding: 38px 0 70px;
+}
+.root h2 {
+  font-family: var(--display);
+  font-stretch: condensed;
+  text-transform: uppercase;
+  font-size: clamp(24px, 3.6vw, 34px);
+  letter-spacing: 0.005em;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.root h3 {
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  margin: 34px 0 12px;
+  font-weight: bold;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.root h4 {
+  font-family: var(--ui);
+  font-size: 14px;
+  margin: 22px 0 6px;
+  letter-spacing: 0.01em;
+}
+.root p {
+  margin: 0 0 14px;
+}
+.lede {
+  font-size: 17px;
+  color: #2b3644;
+  margin-bottom: 26px;
+  max-width: 70ch;
+}
+.note {
+  font-family: var(--ui);
+  font-size: 13px;
+  line-height: 1.55;
+  color: #3b4655;
+  background: var(--field);
+  border-left: 3px solid var(--navy);
+  padding: 13px 16px;
+  margin: 20px 0;
+}
+.noteWarn {
+  border-left-color: var(--stamp);
+  background: #fdf2f1;
+}
+.root ul,
+.root ol {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+.root li {
+  margin: 0 0 7px;
+}
+.kra {
+  border: 1px solid var(--rule);
+  margin: 0 0 18px;
+}
+.kra > summary {
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: var(--field);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.kra > summary::-webkit-details-marker {
+  display: none;
+}
+.kra > summary::after {
+  content: "+";
+  font-size: 19px;
+  color: var(--navy);
+  line-height: 1;
+}
+.kra[open] > summary::after {
+  content: "\2013";
+}
+.kra > summary:focus-visible {
+  outline: 3px solid var(--tab-blue);
+  outline-offset: -3px;
+}
+.kraInner {
+  padding: 6px 20px 16px;
+  font-family: var(--doc);
+  font-size: 16px;
+}
+.kraInner h5 {
+  font-family: var(--ui);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 18px 0 5px;
+  font-weight: bold;
+}
+
+/* ---------- tables ---------- */
+.root table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--ui);
+  font-size: 13.5px;
+  margin: 0 0 18px;
+}
+.root th,
+.root td {
+  border: 1px solid var(--rule);
+  padding: 9px 11px;
+  text-align: left;
+  vertical-align: top;
+}
+.root th {
+  background: var(--field);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.num {
+  text-align: center;
+  width: 64px;
+  font-weight: bold;
+}
+.rowTotal td {
+  background: #f7f9fb;
+  font-weight: bold;
+}
+.rowYou td {
+  background: #fff8e6;
+}
+.tickCol {
+  width: 38px;
+  text-align: center;
+  vertical-align: middle;
+}
+.tickCol input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--navy);
+}
+.rowDone td:not(.tickCol) {
+  color: var(--muted);
+}
+
+/* ---------- checklist ---------- */
+.chk {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+.chk li {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  margin: 0;
+}
+.chk input {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--navy);
+}
+.chk label {
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.why {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.chkDone label {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.chkDone .why {
+  text-decoration: none;
+}
+.progress {
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+/* ---------- master progress ---------- */
+.bigprog {
+  border: 1px solid var(--rule);
+  padding: 16px 18px 18px;
+  margin: 0 0 26px;
+  background: var(--field);
+}
+.bigprogHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--display);
+  font-stretch: condensed;
+  text-transform: uppercase;
+  font-size: 24px;
+  letter-spacing: 0.01em;
+  margin-bottom: 10px;
+  color: var(--navy);
+}
+.bar {
+  height: 9px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.barFill {
+  height: 100%;
+  background: var(--navy);
+  transition: width 0.25s ease;
+}
+.roll {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--ui);
+  font-size: 13.5px;
+}
+.roll .nm {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.roll button {
+  font: inherit;
+  color: var(--ink);
+  text-decoration: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+.roll button:hover {
+  border-bottom-color: var(--navy);
+  color: var(--navy);
+}
+.rollMini {
+  flex: 0 0 110px;
+  height: 7px;
+  background: #fff;
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+.rollMini i {
+  display: block;
+  height: 100%;
+  background: var(--navy);
+}
+.rollN {
+  flex: 0 0 66px;
+  text-align: right;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.rollFull .rollN {
+  color: var(--tab-green);
+  font-weight: bold;
+}
+.rollFull .rollMini i {
+  background: var(--tab-green);
+}
+
+/* ---------- question bank ---------- */
+.searchrow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  align-items: center;
+}
+.searchrow input[type="search"] {
+  font-family: var(--ui);
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  flex: 1 1 260px;
+  background: #fff;
+  color: var(--ink);
+}
+.searchrow input[type="search"]:focus-visible {
+  outline: 3px solid var(--tab-blue);
+  outline-offset: 1px;
+}
+.count {
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.q {
+  border-left: 2px solid var(--rule);
+  padding: 0 0 0 16px;
+  margin: 0 0 22px;
+}
+.qTag {
+  font-family: var(--ui);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+.qAsk {
+  font-family: var(--doc);
+  font-size: 17.5px;
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.qHint {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: #3b4655;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---------- STAR grid ---------- */
+.star {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0;
+  margin: 0 0 22px;
+  border: 1px solid var(--rule);
+}
+.star div {
+  padding: 15px 16px;
+  border-right: 1px solid var(--rule);
+}
+.star div:last-child {
+  border-right: none;
+}
+.star strong {
+  font-family: var(--display);
+  font-stretch: condensed;
+  text-transform: uppercase;
+  font-size: 26px;
+  display: block;
+  line-height: 1;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.star span {
+  font-family: var(--ui);
+  font-size: 13px;
+  line-height: 1.5;
+  display: block;
+  color: #3b4655;
+}
+
+/* ---------- templates ---------- */
+.tplCard {
+  border: 1px solid var(--rule);
+  margin: 0 0 26px;
+}
+.tplHead {
+  background: var(--field);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tplTitle {
+  font-family: var(--display);
+  font-stretch: condensed;
+  text-transform: uppercase;
+  font-size: 21px;
+  color: var(--navy);
+  margin: 0 !important;
+}
+.tplKra {
+  font-family: var(--ui);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tplWhen {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: #3b4655;
+  padding: 12px 16px 0;
+  margin: 0;
+}
+.tplBody {
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #fbfcfd;
+  border: 1px solid var(--rule-soft);
+  margin: 12px 16px;
+  padding: 14px 16px;
+  overflow-x: auto;
+}
+.tplNotes {
+  padding: 4px 16px 16px;
+}
+.tplNotes li {
+  font-family: var(--ui);
+  font-size: 13px;
+  color: #3b4655;
+  line-height: 1.55;
+}
+
+footer.footer {
+  border-top: 3px solid var(--navy);
+  padding: 26px 0 60px;
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--muted);
+}
+.footer a {
+  color: var(--navy);
+}
+.backtop {
+  font-family: var(--ui);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  .star div {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .star div:last-child {
+    border-bottom: none;
+  }
+  .tabs button {
+    font-size: 11px;
+    padding: 9px 11px 8px;
+  }
+}

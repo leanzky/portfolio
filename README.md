@@ -248,6 +248,16 @@ The interface ships English and Chinese, toggled from the corner of every game s
 
 The language toggle and the Chinese dictionary are independent: you can play English words with a Chinese interface, or vice versa. The rest of the portfolio is not translated — this is scoped to `/scrabble-slam`.
 
+## AO II Reviewer (the page at /ao2-reviewer)
+
+A personal study aid for the DepEd Administrative Officer II hiring assessment (Division Memorandum No. 556, s. 2026, SDO Camarines Sur): the job's key result areas, how the 100-point ranking breaks down, coverage for the written test, a searchable behavioural-interview question bank, work sample drills, fill-in templates for the documents an AO II actually produces, an expanded reference shelf of Republic Acts and administrative doctrine, a dedicated hiring/promotion/leave reference, and the submission-folder checklist. Reached from the header, or directly at `/ao2-reviewer`. **No gate and no auth** — unlike `/csharp` and `/gameshows`, this one was asked to stay fully open.
+
+Content is data in [`components/ao2/data.ts`](components/ao2/data.ts) — checklists, reference tables, and templates are all typed objects (`ChecklistDef`, `TableDef`, `TemplateDef`), so adding a law or a template means adding an object, never touching a component. `components/ao2/Shared.tsx` renders any `ChecklistDef` as a tickable list and any `TableDef` as a tickable reference table; both bind to one `localStorage`-backed progress store (`lib/ao2/progress.ts`, same external-store pattern as the Scrabble Slam leaderboard) so the master rollup on the Checklist tab, the per-tab progress lines, and reloading the page all agree.
+
+Styling is a CSS Module ([`components/ao2/ao2.module.css`](components/ao2/ao2.module.css)) lifted from the original standalone HTML file this page was built from — official-document aesthetic, folder tabs, a red "applications close" stamp — rather than reworked into Tailwind utilities, since the design was already right and only the content needed expanding.
+
+**Accuracy note carried through the page itself:** this is a study aid reasoned from public issuances, not a certified legal text. Section numbers, exact amounts, and current-vs-superseded status (the 2024 procurement law update is flagged explicitly) should be verified against the official text or the HRMO before being relied on in the actual assessment.
+
 ## C# & .NET Career Track (the page at /csharp)
 
 A private study track: twelve modules, 51 lessons, six project briefs, an interview question bank, and a readiness checklist. Reached from the Selected Work card, or directly at `/csharp`. No Supabase, no backend of any kind — it is a static page plus `localStorage`.

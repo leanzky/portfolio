@@ -60,6 +60,12 @@ export function Nav() {
           >
             Calendar
           </Link>
+          <Link
+            href="/ao2-reviewer"
+            className="text-sm text-muted hover:text-foreground transition-colors"
+          >
+            AO2 Reviewer
+          </Link>
           <a
             href={site.ctaLink}
             className="text-sm font-medium bg-accent text-accent-foreground px-4 py-2 rounded-full hover:opacity-85 transition-opacity"
@@ -109,6 +115,13 @@ export function Nav() {
             onClick={() => setOpen(false)}
           >
             Calendar
+          </Link>
+          <Link
+            href="/ao2-reviewer"
+            className="text-sm text-muted hover:text-foreground transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            AO2 Reviewer
           </Link>
           <a
             href={site.ctaLink}
