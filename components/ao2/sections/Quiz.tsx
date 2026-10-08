@@ -43,9 +43,10 @@ export function QuizSection() {
     <>
       <h2>Practice quiz</h2>
       <p className={styles.lede}>
-        Twenty-four multiple-choice questions pulled from every tab in this
-        reviewer — duties and scoring, templates, procurement and property,
-        hiring and promotion, leave law, and the reference shelf. Answer
+        {quizQuestions.length} multiple-choice questions pulled from every tab in this
+        reviewer — duties and scoring, the assessment format, worked examples
+        and computations, procurement and property, hiring and promotion,
+        leave law, and the reference shelf. Answer
         all of them, then check your score against the explanation for
         each. This is a self-check, not a leaked exam question.
       </p>

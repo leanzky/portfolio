@@ -10,6 +10,9 @@
  * relied on in the actual assessment.
  */
 
+import { assessmentKit } from "./assessment";
+import { assessmentQuiz } from "./assessmentQuiz";
+
 export type ChecklistItem = { id: string; label: string; why?: string };
 export type ChecklistDef = {
   id: string;
@@ -244,6 +247,12 @@ export const workSampleDrills: ChecklistDef = {
     { id: "k8", label: "Handle a request for personnel information", why: "Someone asks for a copy of a colleague's record. The right answer involves the Data Privacy Act, the duty of confidentiality, and referring the request through the school head. This may appear as a written scenario rather than a task." },
     { id: "k9", label: "Draft an indorsement routing a document to another office", why: "One or two sentences: what is attached, what action or comment is requested, and to whom it goes next. Practise the standard opening phrase until it is automatic." },
     { id: "k10", label: "Walk through the hiring process for a vacant Administrative Assistant item", why: "Publication period, who screens, who ranks, who appoints, and where CSC attestation fits. A likely oral or written scenario given this is exactly the process you are going through." },
+    { id: "k11", label: "Encode given figures in Excel, then build a summary table, a pivot and a chart", why: "Reported as a standard task. The Examples tab has a supplies issuance sheet to rebuild from scratch." },
+    { id: "k12", label: "Compute a tardiness deduction and a salary differential, showing every step", why: "Daily rate, undertime equivalent, deduction. Worked example in the Examples tab." },
+    { id: "k13", label: "Reconcile a monthly MOOE allotment against expenses", why: "Allotment minus expenses should be explained down to the last peso, ideally zero. Worked example in the Examples tab." },
+    { id: "k14", label: "Convert Word to PDF and PDF to Word, and organise a folder of electronic files", why: "Reported as part of the skills test. Do it on your own laptop with a stopwatch." },
+    { id: "k15", label: "Write an incident report, a request letter, an invitation and minutes from a one-line scenario", why: "Eight practice scenarios are on the Written test tab. Do them against the clock, then compare with the Examples tab." },
+    { id: "k16", label: "Write an accomplishment or narrative report with counts and amounts in every line", why: "Organise by key result area. Evidence beats adjectives." },
   ],
 };
 
@@ -868,6 +877,7 @@ export const allChecklists: ChecklistDef[] = [
   writtenCoverage,
   storyBank,
   workSampleDrills,
+  assessmentKit,
   basicChecklist,
   compChecklist,
 ];
@@ -1081,4 +1091,5 @@ export const quizQuestions: QuizQuestion[] = [
     correct: 1,
     explanation: "An accountable officer — primarily accountable if the property is entrusted directly to them, secondarily accountable if they merely approve or have access to its movement. This is the legal reason a custodian signs a PAR or ICS personally.",
   },
+  ...assessmentQuiz,
 ];

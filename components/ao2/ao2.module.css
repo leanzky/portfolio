@@ -762,3 +762,17 @@ footer.footer {
 .quizRetake:hover {
   background: var(--field);
 }
+
+/* Worked examples keep their hand-wrapped line breaks and column alignment,
+   so on a phone they scroll sideways inside the box instead of re-wrapping. */
+.tplBodyFixed {
+  white-space: pre;
+  font-size: 11.5px;
+  line-height: 1.55;
+  -webkit-overflow-scrolling: touch;
+}
+
+.offline {
+  font-size: 13px;
+  color: var(--navy);
+}

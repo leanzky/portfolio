@@ -13,6 +13,18 @@ const nextConfig: NextConfig = {
         source: "/health.webmanifest",
         headers: [{ key: "Content-Type", value: "application/manifest+json" }],
       },
+      {
+        source: "/ao2.webmanifest",
+        headers: [{ key: "Content-Type", value: "application/manifest+json" }],
+      },
+      {
+        // A cached worker would pin phones to an old copy of itself.
+        source: "/ao2-sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
     ];
   },
 };

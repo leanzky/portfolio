@@ -14,6 +14,8 @@ import { ScoreSection } from "./sections/Score";
 import { WrittenSection } from "./sections/Written";
 import { BeiSection } from "./sections/Bei";
 import { WorkSampleSection } from "./sections/WorkSample";
+import { OfflineStatus } from "./OfflineStatus";
+import { ExamplesSection } from "./sections/Examples";
 import { TemplatesSection } from "./sections/Templates";
 import { LawSection } from "./sections/Law";
 import { HiringSection } from "./sections/Hiring";
@@ -27,6 +29,7 @@ const TABS: { id: string; label: string; render: () => React.ReactNode }[] = [
   { id: "score", label: "How you are scored", render: () => <ScoreSection /> },
   { id: "written", label: "Written test", render: () => <WrittenSection /> },
   { id: "templates", label: "Templates", render: () => <TemplatesSection /> },
+  { id: "examples", label: "Examples", render: () => <ExamplesSection /> },
   { id: "bei", label: "Interview (BEI)", render: () => <BeiSection /> },
   { id: "work", label: "Work sample", render: () => <WorkSampleSection /> },
   { id: "hiring", label: "Hiring, promotion & leave", render: () => <HiringSection /> },
@@ -135,6 +138,7 @@ export function AO2Reviewer() {
             against the official memorandum, the relevant issuance, and the
             SDO Camarines Sur HRMO before relying on them.
           </p>
+          <OfflineStatus />
           <p>
             Checklist progress is saved in this browser only.{" "}
             <Link href="/" className={styles.backtop}>
